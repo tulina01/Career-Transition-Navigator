@@ -1,0 +1,90 @@
+body {
+    background-color: #f8f9fa;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  header {
+    background-color: #4a6fdc;
+    color: white;
+    border-radius: 0 0 20px 20px;
+    margin-bottom: 2rem;
+    padding: 2rem 0;
+  }
+  
+  .card {
+    border-radius: 15px;
+    border: none;
+  }
+  
+  .btn-primary {
+    background-color: #4a6fdc;
+    border-color: #4a6fdc;
+  }
+  
+  .btn-primary:hover {
+    background-color: #3a5bb9;
+    border-color: #3a5bb9;
+  }
+  
+  .step-container {
+    transition: all 0.3s ease;
+  }
+  
+  .career-path-card {
+    cursor: pointer;
+    transition: transform 0.2s;
+    border-left: 5px solid #4a6fdc;
+  }
+  
+  .career-path-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .transition-step {
+    position: relative;
+    padding-left: 30px;
+    margin-bottom: 20px;
+  }
+  
+  .transition-step:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 20px;
+    height: 20px;
+    background-color: #4a6fdc;
+    border-radius: 50%;
+  }
+  
+  .transition-step:after {
+    content: "";
+    position: absolute;
+    left: 9px;
+    top: 25px;
+    width: 2px;
+    height: calc(100% - 5px);
+    background-color: #4a6fdc;
+  }
+  
+  .transition-step:last-child:after {
+    display: none;
+  }
+  
+  .extracted-info {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 20px;
+  }
+  
+  .extracted-info h4 {
+    color: #4a6fdc;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+  }
+  
+  .extracted-info-item {
+    margin-bottom: 5px;
+  }
+  
