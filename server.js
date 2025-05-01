@@ -6,6 +6,7 @@ const mongoose = require("mongoose")
 const pdfParse = require("pdf-parse")
 const mammoth = require("mammoth")
 const axios = require("axios")
+require("dotenv").config()
 
 // Initialize Express app
 const app = express()
@@ -119,8 +120,7 @@ const userSchema = new mongoose.Schema({
 const User = mongoose.model("User", userSchema)
 
 // Configure OpenAI API
-const OPENAI_API_KEY =
-  "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"
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
 // Flag to track if API usage should be disabled due to errors
@@ -544,7 +544,7 @@ app.post("/api/career-recommendations", async (req, res) => {
         // Parse the response
         const responseText = completion.choices[0].message.content
         // Extract JSON from the response
-        const jsonMatch = responseText.match(/\[[\s\S]*\]/)
+        const jsonMatch = responseText.match(/\[[\s\S]*\\]/)
         if (jsonMatch) {
           careerPaths = JSON.parse(jsonMatch[0])
           break // Success, exit the retry loop
