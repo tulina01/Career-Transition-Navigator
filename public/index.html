@@ -5,9 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Career Transition Navigator</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
+  <div class="confetti-container" id="confettiContainer"></div>
+  <div class="toast-container" id="toastContainer"></div>
+  
   <div class="container-fluid">
     <header class="py-4 text-center">
       <h1 class="display-4">Career Transition Navigator</h1>
@@ -18,17 +23,53 @@
       <div class="col-md-8">
         <div class="card shadow-lg mb-5">
           <div class="card-body p-4">
+            <div class="progress-tracker mb-4">
+              <div class="d-flex justify-content-between mb-2">
+                <div class="progress-step active" data-step="1">
+                  <div class="progress-circle">1</div>
+                  <span>Upload Resume</span>
+                </div>
+                <div class="progress-step" data-step="2">
+                  <div class="progress-circle">2</div>
+                  <span>Reasons</span>
+                </div>
+                <div class="progress-step" data-step="3">
+                  <div class="progress-circle">3</div>
+                  <span>Career Paths</span>
+                </div>
+                <div class="progress-step" data-step="4">
+                  <div class="progress-circle">4</div>
+                  <span>Transition Plan</span>
+                </div>
+              </div>
+              <div class="progress">
+                <div class="progress-bar" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+            </div>
+            
             <div id="step1" class="step-container active">
-              <h2 class="card-title mb-4">Step 1: Upload Your Resume</h2>
-              <p>Please upload your resume in PDF or Word format.</p>
+              <h2 class="card-title mb-4">Upload Your Resume</h2>
+              <p>Please upload your resume in PDF or Word format to get personalized career recommendations.</p>
               
               <form id="resumeForm" enctype="multipart/form-data">
-                <div class="mb-3">
-                  <label for="resumeFile" class="form-label">Resume File</label>
-                  <input class="form-control" type="file" id="resumeFile" name="resume" accept=".pdf,.doc,.docx" required>
+                <div class="mb-4">
+                  <div class="file-upload-container">
+                    <label for="resumeFile" class="file-upload-label">
+                      <div class="file-upload-icon">
+                        <i class="bi bi-cloud-arrow-up-fill"></i>
+                      </div>
+                      <div class="file-upload-text">
+                        <span id="fileNameDisplay">Drag & drop your resume or click to browse</span>
+                      </div>
+                      <input class="form-control d-none" type="file" id="resumeFile" name="resume" accept=".pdf,.doc,.docx" required>
+                    </label>
+                  </div>
+                  <small class="text-muted">Supported formats: PDF, DOC, DOCX</small>
                 </div>
                 <div class="d-grid gap-2">
-                  <button type="submit" class="btn btn-primary btn-lg">Upload Resume</button>
+                  <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-arrow-right-circle me-2"></i>Upload & Continue
+                  </button>
                 </div>
               </form>
               
@@ -40,82 +81,129 @@
             </div>
 
             <div id="step2" class="step-container d-none">
-              <h2 class="card-title mb-4">Step 2: Reasons for Career Change</h2>
+              <h2 class="card-title mb-4">Reasons for Career Change</h2>
               <p>Select all that apply to your situation:</p>
               
               <form id="reasonsForm">
                 <div class="mb-3">
-                  <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="Better work-life balance" id="reason1" name="reasons">
-                    <label class="form-check-label" for="reason1">Better work-life balance</label>
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="form-check custom-checkbox mb-3">
+                        <input class="form-check-input" type="checkbox" value="Better work-life balance" id="reason1" name="reasons">
+                        <label class="form-check-label" for="reason1">
+                          <i class="bi bi-life-preserver me-2 text-primary"></i>Better work-life balance
+                        </label>
+                      </div>
+                      <div class="form-check custom-checkbox mb-3">
+                        <input class="form-check-input" type="checkbox" value="Higher salary potential" id="reason2" name="reasons">
+                        <label class="form-check-label" for="reason2">
+                          <i class="bi bi-currency-dollar me-2 text-primary"></i>Higher salary potential
+                        </label>
+                      </div>
+                      <div class="form-check custom-checkbox mb-3">
+                        <input class="form-check-input" type="checkbox" value="More meaningful work" id="reason3" name="reasons">
+                        <label class="form-check-label" for="reason3">
+                          <i class="bi bi-heart-fill me-2 text-primary"></i>More meaningful work
+                        </label>
+                      </div>
+                      <div class="form-check custom-checkbox mb-3">
+                        <input class="form-check-input" type="checkbox" value="Career advancement opportunities" id="reason4" name="reasons">
+                        <label class="form-check-label" for="reason4">
+                          <i class="bi bi-graph-up-arrow me-2 text-primary"></i>Career advancement opportunities
+                        </label>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="form-check custom-checkbox mb-3">
+                        <input class="form-check-input" type="checkbox" value="Industry becoming obsolete" id="reason5" name="reasons">
+                        <label class="form-check-label" for="reason5">
+                          <i class="bi bi-hourglass-split me-2 text-primary"></i>Industry becoming obsolete
+                        </label>
+                      </div>
+                      <div class="form-check custom-checkbox mb-3">
+                        <input class="form-check-input" type="checkbox" value="Relocation" id="reason6" name="reasons">
+                        <label class="form-check-label" for="reason6">
+                          <i class="bi bi-geo-alt-fill me-2 text-primary"></i>Relocation
+                        </label>
+                      </div>
+                      <div class="form-check custom-checkbox mb-3">
+                        <input class="form-check-input" type="checkbox" value="Burnout in current role" id="reason7" name="reasons">
+                        <label class="form-check-label" for="reason7">
+                          <i class="bi bi-battery-half me-2 text-primary"></i>Burnout in current role
+                        </label>
+                      </div>
+                      <div class="form-check custom-checkbox mb-3">
+                        <input class="form-check-input" type="checkbox" value="Desire to use different skills" id="reason8" name="reasons">
+                        <label class="form-check-label" for="reason8">
+                          <i class="bi bi-tools me-2 text-primary"></i>Desire to use different skills
+                        </label>
+                      </div>
+                    </div>
                   </div>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="Higher salary potential" id="reason2" name="reasons">
-                    <label class="form-check-label" for="reason2">Higher salary potential</label>
-                  </div>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="More meaningful work" id="reason3" name="reasons">
-                    <label class="form-check-label" for="reason3">More meaningful work</label>
-                  </div>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="Career advancement opportunities" id="reason4" name="reasons">
-                    <label class="form-check-label" for="reason4">Career advancement opportunities</label>
-                  </div>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="Industry becoming obsolete" id="reason5" name="reasons">
-                    <label class="form-check-label" for="reason5">Industry becoming obsolete</label>
-                  </div>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="Relocation" id="reason6" name="reasons">
-                    <label class="form-check-label" for="reason6">Relocation</label>
-                  </div>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="Burnout in current role" id="reason7" name="reasons">
-                    <label class="form-check-label" for="reason7">Burnout in current role</label>
-                  </div>
-                  <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="Desire to use different skills" id="reason8" name="reasons">
-                    <label class="form-check-label" for="reason8">Desire to use different skills</label>
-                  </div>
-                  <div class="form-check mb-2">
+                  <div class="form-check custom-checkbox mb-3">
                     <input class="form-check-input" type="checkbox" value="Other" id="reasonOther" name="reasons">
-                    <label class="form-check-label" for="reasonOther">Other</label>
+                    <label class="form-check-label" for="reasonOther">
+                      <i class="bi bi-plus-circle me-2 text-primary"></i>Other
+                    </label>
                   </div>
                   <div class="mb-3 d-none" id="otherReasonContainer">
                     <label for="otherReason" class="form-label">Please specify:</label>
                     <input type="text" class="form-control" id="otherReason">
                   </div>
                 </div>
-                <div class="d-grid gap-2">
-                  <button type="submit" class="btn btn-primary btn-lg">Find Career Paths</button>
+                <div class="d-flex justify-content-between mt-4">
+                  <button type="button" class="btn btn-outline-primary" id="backToStep1">
+                    <i class="bi bi-arrow-left me-2"></i>Back
+                  </button>
+                  <button type="submit" class="btn btn-primary">
+                    Find Career Paths<i class="bi bi-arrow-right ms-2"></i>
+                  </button>
                 </div>
               </form>
             </div>
 
             <div id="step3" class="step-container d-none">
-              <h2 class="card-title mb-4">Step 3: Recommended Career Paths</h2>
+              <h2 class="card-title mb-4">Recommended Career Paths</h2>
+              <p>Based on your resume and reasons for change, here are career paths that might be a good fit for you:</p>
+              
               <div id="loadingRecommendations" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">Loading...</span>
                 </div>
                 <p class="mt-3">Analyzing your profile and generating recommendations...</p>
+                <div class="loading-messages mt-3">
+                  <p class="loading-message">Evaluating your skills and experience...</p>
+                </div>
               </div>
+              
               <div id="careerPaths" class="d-none">
                 <!-- Career paths will be inserted here -->
+              </div>
+              
+              <div class="d-flex justify-content-between mt-4">
+                <button type="button" class="btn btn-outline-primary" id="backToStep2">
+                  <i class="bi bi-arrow-left me-2"></i>Back
+                </button>
               </div>
             </div>
 
             <div id="step4" class="step-container d-none">
-              <button class="btn btn-outline-secondary mb-4" id="backToPathsBtn">
-                <i class="bi bi-arrow-left"></i> Back to career paths
+              <button class="btn btn-outline-primary mb-4" id="backToPathsBtn">
+                <i class="bi bi-arrow-left me-2"></i>Back to career paths
               </button>
+              
               <h2 class="card-title mb-4" id="selectedCareerTitle">Career Transition Plan</h2>
+              
               <div id="loadingPlan" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                   <span class="visually-hidden">Loading...</span>
                 </div>
                 <p class="mt-3">Creating your personalized transition plan...</p>
+                <div class="loading-plan-messages mt-3">
+                  <p class="loading-message">Mapping out your journey...</p>
+                </div>
               </div>
+              
               <div id="transitionPlan" class="d-none">
                 <!-- Transition plan will be inserted here -->
               </div>
