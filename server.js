@@ -40,84 +40,9 @@ const upload = multer({
   },
 })
 
-// Connect to MongoDB
-mongoose
-  .connect("mongodb://localhost:27017/career-navigator", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err))
-
-// Define User Schema
-const userSchema = new mongoose.Schema({
-  uniqueId: {
-    type: String,
-    default: () => new mongoose.Types.ObjectId().toString(),
-    unique: true,
-  },
-  contactInfo: {
-    name: String,
-    email: String,
-    phone: String,
-    location: String,
-  },
-  jobHistory: [
-    {
-      title: String,
-      company: String,
-      startDate: Date,
-      endDate: Date,
-      responsibilities: [String],
-      achievements: [String],
-    },
-  ],
-  education: [
-    {
-      degree: String,
-      institution: String,
-      year: Number,
-      field: String,
-    },
-  ],
-  skills: [String],
-  certifications: [String],
-  professionalDevelopment: [String],
-  volunteerExperience: [String],
-  languages: [String],
-  geographicalPreferences: [String],
-  professionalAffiliations: [String],
-  hobbies: [String],
-  reasonsForChange: [String],
-  recommendedCareers: [
-    {
-      title: String,
-      description: String,
-      fitScore: Number,
-      transitionPlan: {
-        overview: String,
-        steps: [
-          {
-            title: String,
-            description: String,
-            resources: [
-              {
-                title: String,
-                url: String,
-              },
-            ],
-          },
-        ],
-      },
-    },
-  ],
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-})
-
-const User = mongoose.model("User", userSchema)
+// Middleware
+app.use(express.json())
+app.use(express.static("public"))
 
 // Configure OpenAI API
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
@@ -175,10 +100,6 @@ async function callOpenAIAPI(messages, temperature = 0.7, model = "gpt-3.5-turbo
   }
 }
 
-// Middleware
-app.use(express.json())
-app.use(express.static("public"))
-
 // Helper function to extract text from PDF
 async function extractTextFromPDF(filePath) {
   try {
@@ -200,6 +121,83 @@ async function extractTextFromDOCX(filePath) {
     console.error("Error extracting text from DOCX:", error)
     throw new Error("Failed to extract text from DOCX")
   }
+}
+
+// Define User Schema
+let User
+try {
+  // Try to get the model if it already exists
+  User = mongoose.model("User")
+} catch (e) {
+  // Define the model if it doesn't exist
+  const userSchema = new mongoose.Schema({
+    uniqueId: {
+      type: String,
+      default: () => new mongoose.Types.ObjectId().toString(),
+      unique: true,
+    },
+    contactInfo: {
+      name: String,
+      email: String,
+      phone: String,
+      location: String,
+    },
+    jobHistory: [
+      {
+        title: String,
+        company: String,
+        startDate: Date,
+        endDate: Date,
+        responsibilities: [String],
+        achievements: [String],
+      },
+    ],
+    education: [
+      {
+        degree: String,
+        institution: String,
+        year: Number,
+        field: String,
+      },
+    ],
+    skills: [String],
+    certifications: [String],
+    professionalDevelopment: [String],
+    volunteerExperience: [String],
+    languages: [String],
+    geographicalPreferences: [String],
+    professionalAffiliations: [String],
+    hobbies: [String],
+    reasonsForChange: [String],
+    recommendedCareers: [
+      {
+        title: String,
+        description: String,
+        fitScore: Number,
+        transitionPlan: {
+          overview: String,
+          steps: [
+            {
+              title: String,
+              description: String,
+              resources: [
+                {
+                  title: String,
+                  url: String,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  })
+
+  User = mongoose.model("User", userSchema)
 }
 
 // Helper function to parse resume text using OpenAI with retry logic
@@ -491,123 +489,6 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
   }
 })
 
-app.post("/api/career-recommendations", async (req, res) => {
-  try {
-    const { resumeData, reasons } = req.body
-
-    if (!resumeData || !reasons || !reasons.length) {
-      return res.status(400).json({ error: "Missing required data" })
-    }
-
-    // Create prompt for OpenAI
-    const prompt = `
-      Based on the following resume information and reasons for career change, suggest 5 potential new career paths that would be a good fit. For each career path, provide a title, brief description, and a fit score percentage (0-100%).
-      
-      Resume Information:
-      - Current/Previous Job Titles: ${resumeData.jobHistory?.map((job) => job.title).join(", ") || "Not provided"}
-      - Skills: ${resumeData.skills?.join(", ") || "Not provided"}
-      - Education: ${resumeData.education?.map((edu) => `${edu.degree} in ${edu.field}`).join(", ") || "Not provided"}
-      - Certifications: ${resumeData.certifications?.join(", ") || "Not provided"}
-      
-      Reasons for Career Change:
-      ${reasons.map((reason) => `- ${reason}`).join("\n")}
-      
-      Format the response as a JSON array with objects containing 'title', 'description', and 'fitScore' properties.
-    `
-
-    // Try to call OpenAI API with retry logic
-    let careerPaths
-    let retryCount = 0
-    const maxRetries = 2
-    let delay = 1000
-
-    while (retryCount < maxRetries) {
-      try {
-        if (apiDisabled) {
-          console.log("API usage disabled, using fallback career paths directly")
-          careerPaths = getFallbackCareerPaths(resumeData, reasons)
-          break
-        }
-
-        // Call OpenAI API
-        const messages = [
-          {
-            role: "system",
-            content:
-              "You are a career counselor helping users find new career paths based on their experience and goals. Always respond with valid JSON.",
-          },
-          { role: "user", content: prompt },
-        ]
-
-        const completion = await callOpenAIAPI(messages, 0.7, "gpt-3.5-turbo")
-
-        // Parse the response
-        const responseText = completion.choices[0].message.content
-        // Extract JSON from the response
-        const jsonMatch = responseText.match(/\[[\s\S]*\\]/)
-        if (jsonMatch) {
-          careerPaths = JSON.parse(jsonMatch[0])
-          break // Success, exit the retry loop
-        } else {
-          throw new Error("No JSON found in response")
-        }
-      } catch (error) {
-        console.error(`Attempt ${retryCount + 1} failed:`, error.message)
-
-        // Check if it's a rate limit error
-        if (error.response && error.response.status === 429) {
-          retryCount++
-
-          if (retryCount < maxRetries) {
-            console.log(`Rate limit hit. Retrying in ${delay / 1000} seconds...`)
-            await new Promise((resolve) => setTimeout(resolve, delay))
-            delay *= 2 // Exponential backoff
-          } else {
-            console.log("Max retries reached. Using fallback career paths.")
-            // Use fallback data
-            careerPaths = getFallbackCareerPaths(resumeData, reasons)
-            break
-          }
-        } else {
-          // For other errors, use fallback immediately
-          console.log("Error occurred. Using fallback career paths.")
-          careerPaths = getFallbackCareerPaths(resumeData, reasons)
-          break
-        }
-      }
-    }
-
-    // If we've exhausted retries without success, use fallback
-    if (!careerPaths) {
-      careerPaths = getFallbackCareerPaths(resumeData, reasons)
-    }
-
-    // Save to database
-    try {
-      const user = new User({
-        ...resumeData,
-        reasonsForChange: reasons,
-        recommendedCareers: careerPaths.map((path) => ({
-          title: path.title,
-          description: path.description,
-          fitScore: path.fitScore,
-        })),
-      })
-
-      const savedUser = await user.save()
-      console.log(`User saved successfully with ID: ${savedUser._id}`)
-    } catch (dbError) {
-      console.error("Database error when saving user:", dbError)
-      // Continue processing even if database save fails
-    }
-
-    res.json({ careerPaths })
-  } catch (error) {
-    console.error("Error getting career recommendations:", error)
-    res.status(500).json({ error: "Error getting career recommendations" })
-  }
-})
-
 // Fallback function for career paths
 function getFallbackCareerPaths(resumeData, reasons) {
   // Check if the resume has software/tech skills
@@ -644,149 +525,256 @@ function getFallbackCareerPaths(resumeData, reasons) {
       ),
     ) || false
 
-  // Check if the resume has event planning skills
-  const hasEventSkills =
-    resumeData.skills?.some((skill) =>
-      ["event", "planning", "organizer", "coordinator", "logistics", "catering"].some(
-        (eventTerm) => typeof skill === "string" && skill.toLowerCase().includes(eventTerm),
-      ),
-    ) || false
-
   // Generate career paths based on detected skills
-  const careerPaths = []
+  const sameFieldCareers = []
+  const differentFieldCareers = []
 
-  if (hasEventSkills) {
-    careerPaths.push(
-      {
-        title: "Event Manager",
-        description:
-          "Plan and oversee all aspects of events, from conception to execution, ensuring client satisfaction.",
-        fitScore: 95,
-      },
-      {
-        title: "Wedding Planner",
-        description:
-          "Specialize in planning and coordinating weddings, working closely with couples to create memorable experiences.",
-        fitScore: 88,
-      },
-      {
-        title: "Corporate Event Coordinator",
-        description: "Organize business conferences, product launches, and corporate retreats for companies.",
-        fitScore: 90,
-      },
-    )
-  }
-
+  // Add same field careers based on detected skills
   if (hasTechSkills) {
-    careerPaths.push(
+    sameFieldCareers.push(
       {
-        title: "Software Developer",
-        description: "Build and maintain software applications using programming languages and development tools.",
+        title: "Senior Software Developer",
+        description:
+          "Lead development of complex software applications with advanced technical expertise. Mentor junior developers and make architectural decisions.",
         fitScore: 90,
+        type: "same-field",
+        transferableSkills: ["Programming expertise", "Problem-solving", "Technical knowledge"],
       },
       {
         title: "DevOps Engineer",
         description:
           "Bridge the gap between development and operations, automating and optimizing deployment pipelines.",
         fitScore: 85,
+        type: "same-field",
+        transferableSkills: ["Technical knowledge", "System administration", "Automation skills"],
       },
       {
-        title: "Data Scientist",
-        description: "Analyze and interpret complex data to help organizations make better decisions.",
-        fitScore: 80,
+        title: "Technical Product Manager",
+        description:
+          "Guide product development from a technical perspective, working with both engineering and business teams.",
+        fitScore: 82,
+        type: "same-field",
+        transferableSkills: ["Technical knowledge", "Communication", "Project management"],
       },
     )
   }
 
   if (hasBusinessSkills) {
-    careerPaths.push(
+    sameFieldCareers.push(
       {
-        title: "Product Manager",
+        title: "Senior Project Manager",
         description:
-          "Lead the development of products from conception to launch, balancing business needs with technical constraints.",
+          "Lead complex projects with larger teams and budgets. Develop project management strategies and mentor junior managers.",
         fitScore: 88,
+        type: "same-field",
+        transferableSkills: ["Leadership", "Organization", "Communication"],
       },
       {
-        title: "Business Analyst",
+        title: "Business Development Director",
         description:
-          "Bridge the gap between IT and business using data analytics to assess processes and requirements.",
-        fitScore: 82,
+          "Develop business strategies to identify and pursue new growth opportunities. Build partnerships and lead negotiations.",
+        fitScore: 85,
+        type: "same-field",
+        transferableSkills: ["Negotiation", "Strategic thinking", "Relationship building"],
       },
     )
   }
 
   if (hasDesignSkills) {
-    careerPaths.push(
+    sameFieldCareers.push(
       {
-        title: "UX/UI Designer",
-        description: "Create intuitive and engaging user experiences for websites and applications.",
+        title: "Senior UX Designer",
+        description:
+          "Lead user experience design for complex products. Conduct user research and develop design systems.",
         fitScore: 87,
+        type: "same-field",
+        transferableSkills: ["Design thinking", "User empathy", "Visual communication"],
       },
       {
-        title: "Product Designer",
+        title: "Creative Director",
         description:
-          "Design products that are both functional and aesthetically pleasing, focusing on the user experience.",
+          "Provide creative vision and direction for design teams. Develop brand strategies and ensure design quality.",
         fitScore: 84,
+        type: "same-field",
+        transferableSkills: ["Creative vision", "Leadership", "Design expertise"],
       },
     )
   }
 
-  // Add some general options if we don't have enough specific ones
-  if (careerPaths.length < 5) {
-    careerPaths.push(
+  // Add different field careers
+  if (hasTechSkills) {
+    differentFieldCareers.push(
       {
-        title: "Digital Marketing Specialist",
+        title: "Data Scientist",
         description:
-          "Develop and implement marketing strategies across digital channels to increase brand awareness and drive sales.",
+          "Apply statistical analysis and machine learning to extract insights from data. Develop models to solve business problems.",
+        fitScore: 78,
+        type: "different-field",
+        transferableSkills: ["Analytical thinking", "Problem-solving", "Technical aptitude"],
+      },
+      {
+        title: "Cybersecurity Specialist",
+        description:
+          "Protect organizations from digital threats and vulnerabilities. Implement security measures and respond to incidents.",
         fitScore: 75,
+        type: "different-field",
+        transferableSkills: ["Technical knowledge", "Attention to detail", "Problem-solving"],
       },
       {
         title: "Technical Writer",
         description: "Create documentation that helps people understand and use technical products and services.",
         fitScore: 72,
-      },
-      {
-        title: "Project Coordinator",
-        description:
-          "Support project managers in planning, executing, and closing projects by handling administrative tasks.",
-        fitScore: 70,
+        type: "different-field",
+        transferableSkills: ["Technical knowledge", "Writing skills", "Attention to detail"],
       },
     )
   }
 
-  // Return only 5 career paths
-  return careerPaths.slice(0, 5)
+  if (hasBusinessSkills) {
+    differentFieldCareers.push(
+      {
+        title: "Management Consultant",
+        description:
+          "Help organizations improve performance through analysis of existing problems and development of plans for improvement.",
+        fitScore: 76,
+        type: "different-field",
+        transferableSkills: ["Analytical thinking", "Problem-solving", "Communication"],
+      },
+      {
+        title: "Corporate Trainer",
+        description: "Develop and deliver training programs to improve employee skills and performance.",
+        fitScore: 74,
+        type: "different-field",
+        transferableSkills: ["Communication", "Subject expertise", "Presentation skills"],
+      },
+    )
+  }
+
+  if (hasDesignSkills) {
+    differentFieldCareers.push(
+      {
+        title: "E-learning Designer",
+        description:
+          "Create engaging digital learning experiences. Combine instructional design principles with visual design.",
+        fitScore: 77,
+        type: "different-field",
+        transferableSkills: ["Design skills", "Creativity", "User empathy"],
+      },
+      {
+        title: "User Research Specialist",
+        description:
+          "Conduct research to understand user needs and behaviors. Translate findings into actionable insights.",
+        fitScore: 75,
+        type: "different-field",
+        transferableSkills: ["Analytical thinking", "Empathy", "Communication"],
+      },
+    )
+  }
+
+  // Add some general options if we don't have enough specific ones
+  if (sameFieldCareers.length < 5) {
+    sameFieldCareers.push(
+      {
+        title: "Team Lead",
+        description:
+          "Guide and manage a team of professionals in your current field. Develop team members and ensure project success.",
+        fitScore: 80,
+        type: "same-field",
+        transferableSkills: ["Leadership", "Communication", "Domain expertise"],
+      },
+      {
+        title: "Consultant",
+        description:
+          "Provide expert advice in your current field to various clients. Solve complex problems and implement solutions.",
+        fitScore: 78,
+        type: "same-field",
+        transferableSkills: ["Domain expertise", "Problem-solving", "Communication"],
+      },
+      {
+        title: "Industry Specialist",
+        description:
+          "Become a recognized expert in your field with deep specialized knowledge. Provide guidance on complex industry-specific challenges.",
+        fitScore: 76,
+        type: "same-field",
+        transferableSkills: ["Domain expertise", "Analytical thinking", "Problem-solving"],
+      },
+    )
+  }
+
+  if (differentFieldCareers.length < 5) {
+    differentFieldCareers.push(
+      {
+        title: "Digital Marketing Specialist",
+        description:
+          "Develop and implement marketing strategies across digital channels to increase brand awareness and drive sales.",
+        fitScore: 70,
+        type: "different-field",
+        transferableSkills: ["Communication", "Creativity", "Analytical thinking"],
+      },
+      {
+        title: "Customer Success Manager",
+        description: "Ensure customers achieve their desired outcomes while using your company's products or services.",
+        fitScore: 68,
+        type: "different-field",
+        transferableSkills: ["Communication", "Relationship building", "Problem-solving"],
+      },
+      {
+        title: "Content Creator",
+        description:
+          "Produce engaging content for various platforms. Develop a content strategy aligned with business goals.",
+        fitScore: 65,
+        type: "different-field",
+        transferableSkills: ["Communication", "Creativity", "Organization"],
+      },
+    )
+  }
+
+  // Ensure we have exactly 5 careers in each category
+  return {
+    sameFieldCareers: sameFieldCareers.slice(0, 5),
+    differentFieldCareers: differentFieldCareers.slice(0, 5),
+  }
 }
 
-app.post("/api/transition-plan", async (req, res) => {
+app.post("/api/career-recommendations", async (req, res) => {
   try {
-    const { resumeData, careerTitle } = req.body
+    const { resumeData, reasons } = req.body
 
-    if (!resumeData || !careerTitle) {
+    if (!resumeData || !reasons || !reasons.length) {
       return res.status(400).json({ error: "Missing required data" })
     }
 
     // Create prompt for OpenAI
     const prompt = `
-      Create a detailed step-by-step transition plan for someone moving from their current career to becoming a ${careerTitle}.
-      
-      Current Information:
-      - Current/Previous Job Titles: ${resumeData.jobHistory?.map((job) => job.title).join(", ") || "Not provided"}
-      - Skills: ${Array.isArray(resumeData.skills) ? resumeData.skills.join(", ") : "Not provided"}
-      - Education: ${resumeData.education?.map((edu) => `${edu.degree} in ${edu.field}`).join(", ") || "Not provided"}
-      
-      Target Career: ${careerTitle}
-      
-      Provide a comprehensive transition plan with the following:
-      1. An overview paragraph summarizing the transition
-      2. 5-7 specific steps to make the transition
-      3. For each step, include a title, detailed description, and 1-2 helpful resources (with URLs)
-      
-      Format the response as a JSON object with 'overview' and 'steps' properties. Each step should have 'title', 'description', and 'resources' properties.
-    `
+    Based on the following resume information and reasons for career change, suggest career paths in two categories:
+    1. Career paths within the same or similar field (lateral moves or advancements)
+    2. Career paths in different fields that would leverage the transferable skills
+
+    Resume Information:
+    - Current/Previous Job Titles: ${resumeData.jobHistory?.map((job) => job.title).join(", ") || "Not provided"}
+    - Skills: ${Array.isArray(resumeData.skills) ? resumeData.skills.join(", ") : "Not provided"}
+    - Education: ${resumeData.education?.map((edu) => `${edu.degree} in ${edu.field}`).join(", ") || "Not provided"}
+    - Certifications: ${resumeData.certifications?.join(", ") || "Not provided"}
+    
+    Reasons for Career Change:
+    ${reasons.map((reason) => `- ${reason}`).join("\n")}
+    
+    Analyze the reasons for change to determine if the person is looking to:
+    a) Stay in the same field but find a different role (due to burnout, advancement, better work-life balance)
+    b) Move to an entirely different field (due to industry becoming obsolete, desire to use different skills, seeking more meaningful work)
+    
+    For EACH category, provide 5 career paths with the following information:
+    1. Title
+    2. Description (2-3 sentences explaining the role)
+    3. Fit Score (0-100% based on skills match and alignment with reasons for change)
+    4. Type (either "same-field" or "different-field")
+    5. Key transferable skills from their background that would apply to this role
+    
+    Format the response as a JSON object with two arrays: "sameFieldCareers" and "differentFieldCareers".
+  `
 
     // Try to call OpenAI API with retry logic
-    let transitionPlan
+    let careerPaths
     let retryCount = 0
     const maxRetries = 2
     let delay = 1000
@@ -794,8 +782,8 @@ app.post("/api/transition-plan", async (req, res) => {
     while (retryCount < maxRetries) {
       try {
         if (apiDisabled) {
-          console.log("API usage disabled, using fallback transition plan directly")
-          transitionPlan = getFallbackTransitionPlan(careerTitle)
+          console.log("API usage disabled, using fallback career paths directly")
+          careerPaths = getFallbackCareerPaths(resumeData, reasons)
           break
         }
 
@@ -804,7 +792,7 @@ app.post("/api/transition-plan", async (req, res) => {
           {
             role: "system",
             content:
-              "You are a career counselor helping users transition to new careers with practical, actionable advice. Always respond with valid JSON.",
+              "You are a career counselor helping users find new career paths based on their experience and goals. Always respond with valid JSON.",
           },
           { role: "user", content: prompt },
         ]
@@ -813,11 +801,16 @@ app.post("/api/transition-plan", async (req, res) => {
 
         // Parse the response
         const responseText = completion.choices[0].message.content
+        console.log("OpenAI response:", responseText)
 
         // Extract JSON from the response
         const jsonMatch = responseText.match(/\{[\s\S]*\}/)
         if (jsonMatch) {
-          transitionPlan = JSON.parse(jsonMatch[0])
+          const parsedResponse = JSON.parse(jsonMatch[0])
+          careerPaths = {
+            sameFieldCareers: parsedResponse.sameFieldCareers || [],
+            differentFieldCareers: parsedResponse.differentFieldCareers || [],
+          }
           break // Success, exit the retry loop
         } else {
           throw new Error("No JSON found in response")
@@ -834,65 +827,33 @@ app.post("/api/transition-plan", async (req, res) => {
             await new Promise((resolve) => setTimeout(resolve, delay))
             delay *= 2 // Exponential backoff
           } else {
-            console.log("Max retries reached. Using fallback transition plan.")
+            console.log("Max retries reached. Using fallback career paths.")
             // Use fallback data
-            transitionPlan = getFallbackTransitionPlan(careerTitle)
+            careerPaths = getFallbackCareerPaths(resumeData, reasons)
             break
           }
         } else {
           // For other errors, use fallback immediately
-          console.log("Error occurred. Using fallback transition plan.")
-          transitionPlan = getFallbackTransitionPlan(careerTitle)
+          console.log("Error occurred. Using fallback career paths.")
+          careerPaths = getFallbackCareerPaths(resumeData, reasons)
           break
         }
       }
     }
 
     // If we've exhausted retries without success, use fallback
-    if (!transitionPlan) {
-      transitionPlan = getFallbackTransitionPlan(careerTitle)
+    if (!careerPaths) {
+      careerPaths = getFallbackCareerPaths(resumeData, reasons)
     }
 
-    // Update user in database
-    try {
-      // Try to find the user by email first
-      let updateResult = null
-      if (resumeData.contactInfo && resumeData.contactInfo.email) {
-        updateResult = await User.findOneAndUpdate(
-          { "contactInfo.email": resumeData.contactInfo.email },
-          { $set: { [`recommendedCareers.$[career].transitionPlan`]: transitionPlan } },
-          {
-            arrayFilters: [{ "career.title": careerTitle }],
-            new: true,
-          },
-        )
-      }
-
-      // If no user found by email, try to find the most recent user
-      if (!updateResult) {
-        const recentUser = await User.findOne().sort({ createdAt: -1 })
-        if (recentUser) {
-          updateResult = await User.findByIdAndUpdate(
-            recentUser._id,
-            { $set: { [`recommendedCareers.$[career].transitionPlan`]: transitionPlan } },
-            {
-              arrayFilters: [{ "career.title": careerTitle }],
-              new: true,
-            },
-          )
-        }
-      }
-
-      console.log("Transition plan saved to database")
-    } catch (dbError) {
-      console.error("Database error when updating transition plan:", dbError)
-      // Continue processing even if database update fails
-    }
-
-    res.json({ plan: transitionPlan })
+    console.log("Sending career paths to client:", careerPaths)
+    res.json({
+      sameFieldCareers: careerPaths.sameFieldCareers || [],
+      differentFieldCareers: careerPaths.differentFieldCareers || [],
+    })
   } catch (error) {
-    console.error("Error getting transition plan:", error)
-    res.status(500).json({ error: "Error getting transition plan" })
+    console.error("Error getting career recommendations:", error)
+    res.status(500).json({ error: "Error getting career recommendations" })
   }
 })
 
@@ -900,6 +861,7 @@ app.post("/api/transition-plan", async (req, res) => {
 function getFallbackTransitionPlan(careerTitle) {
   return {
     overview: `Transitioning to a career as a ${careerTitle} will require a combination of education, skill development, and networking. This plan outlines the key steps to make this transition successfully.`,
+    transitionType: "different-field", // Default to different-field for fallback
     steps: [
       {
         title: "Assess Your Current Skills",
@@ -991,7 +953,154 @@ function getFallbackTransitionPlan(careerTitle) {
   }
 }
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+app.post("/api/transition-plan", async (req, res) => {
+  try {
+    const { resumeData, careerTitle } = req.body
+
+    if (!resumeData || !careerTitle) {
+      return res.status(400).json({ error: "Missing required data" })
+    }
+
+    // Create prompt for OpenAI
+    const prompt = `
+      Create a detailed step-by-step transition plan for someone moving to a career as a ${careerTitle}.
+      
+      Current Information:
+      - Current/Previous Job Titles: ${resumeData.jobHistory?.map((job) => job.title).join(", ") || "Not provided"}
+      - Skills: ${Array.isArray(resumeData.skills) ? resumeData.skills.join(", ") : "Not provided"}
+      - Education: ${resumeData.education?.map((edu) => `${edu.degree} in ${edu.field}`).join(", ") || "Not provided"}
+      
+      Target Career: ${careerTitle}
+      
+      Determine if this is a transition within the same field or to a different field.
+      If it's within the same field, focus on skill advancement, specialization, and career progression.
+      If it's to a different field, focus on transferable skills, education/training needs, and building new networks.
+      
+      Provide a comprehensive transition plan with the following:
+      1. An overview paragraph summarizing the transition and whether it's within the same field or to a different field
+      2. 5-7 specific steps to make the transition
+      3. For each step, include a title, detailed description, and 1-2 helpful resources (with URLs)
+      
+      Format the response as a JSON object with 'overview', 'transitionType' (either "same-field" or "different-field"), and 'steps' properties. Each step should have 'title', 'description', and 'resources' properties.
+    `
+
+    // Try to call OpenAI API with retry logic
+    let transitionPlan
+    let retryCount = 0
+    const maxRetries = 2
+    let delay = 1000
+
+    while (retryCount < maxRetries) {
+      try {
+        if (apiDisabled) {
+          console.log("API usage disabled, using fallback transition plan directly")
+          transitionPlan = getFallbackTransitionPlan(careerTitle)
+          break
+        }
+
+        // Call OpenAI API
+        const messages = [
+          {
+            role: "system",
+            content:
+              "You are a career counselor helping users transition to new careers with practical, actionable advice. Always respond with valid JSON.",
+          },
+          { role: "user", content: prompt },
+        ]
+
+        const completion = await callOpenAIAPI(messages, 0.7, "gpt-3.5-turbo")
+
+        // Parse the response
+        const responseText = completion.choices[0].message.content
+        console.log("OpenAI transition plan response:", responseText)
+
+        // Extract JSON from the response
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          transitionPlan = JSON.parse(jsonMatch[0])
+          break // Success, exit the retry loop
+        } else {
+          throw new Error("No JSON found in response")
+        }
+      } catch (error) {
+        console.error(`Attempt ${retryCount + 1} failed:`, error.message)
+
+        // Check if it's a rate limit error
+        if (error.response && error.response.status === 429) {
+          retryCount++
+
+          if (retryCount < maxRetries) {
+            console.log(`Rate limit hit. Retrying in ${delay / 1000} seconds...`)
+            await new Promise((resolve) => setTimeout(resolve, delay))
+            delay *= 2 // Exponential backoff
+          } else {
+            console.log("Max retries reached. Using fallback transition plan.")
+            // Use fallback data
+            transitionPlan = getFallbackTransitionPlan(careerTitle)
+            break
+          }
+        } else {
+          // For other errors, use fallback immediately
+          console.log("Error occurred. Using fallback transition plan.")
+          transitionPlan = getFallbackTransitionPlan(careerTitle)
+          break
+        }
+      }
+    }
+
+    // If we've exhausted retries without success, use fallback
+    if (!transitionPlan) {
+      transitionPlan = getFallbackTransitionPlan(careerTitle)
+    }
+
+    console.log("Sending transition plan to client:", transitionPlan)
+    res.json({ plan: transitionPlan })
+  } catch (error) {
+    console.error("Error getting transition plan:", error)
+    res.status(500).json({ error: "Error getting transition plan" })
+  }
 })
+
+// Connect to MongoDB with better error handling
+let isMongoConnected = false
+
+// Function to connect to MongoDB
+async function connectToMongoDB() {
+  try {
+    // Skip MongoDB connection in development if needed
+    if (process.env.SKIP_MONGODB === "true") {
+      console.log("MongoDB connection skipped as per configuration")
+      return true
+    }
+
+    await mongoose.connect("mongodb://localhost:27017/career-navigator", {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    console.log("Connected to MongoDB")
+    isMongoConnected = true
+    return true
+  } catch (err) {
+    console.error("MongoDB connection error:", err)
+    console.log("Server will continue without MongoDB. Data will not be persisted.")
+    return false
+  }
+}
+
+// Start server
+async function startServer() {
+  // Try to connect to MongoDB but don't block server startup
+  await connectToMongoDB()
+
+  // Start the server regardless of MongoDB connection status
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`)
+    console.log(`MongoDB connection status: ${isMongoConnected ? "Connected" : "Not connected"}`)
+    if (!isMongoConnected) {
+      console.log("Note: The application will work without MongoDB, but user data will not be saved.")
+    }
+  })
+}
+
+// Start the server
+startServer()

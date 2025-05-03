@@ -324,13 +324,14 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .then((data) => {
         clearInterval(messageInterval)
+        console.log("Career recommendations response:", data)
 
         // Hide loading, show career paths
         loadingRecommendations.classList.add("d-none")
         careerPaths.classList.remove("d-none")
 
         // Display career paths
-        displayCareerPaths(data.careerPaths)
+        displayCareerPaths(data)
 
         // Show success toast
         showToast("success", "Success", "Career recommendations generated successfully!")
@@ -339,22 +340,35 @@ document.addEventListener("DOMContentLoaded", () => {
         clearInterval(messageInterval)
         console.error("Error getting career recommendations:", error)
         loadingRecommendations.innerHTML = `
-        <div class="alert alert-danger">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          Error getting career recommendations. Please try again.
-        </div>
-        <button class="btn btn-primary mt-3" onclick="location.reload()">
-          <i class="bi bi-arrow-clockwise me-2"></i>Start Over
-        </button>
-      `
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      Error getting career recommendations. Please try again.
+    </div>
+    <button class="btn btn-primary mt-3" onclick="location.reload()">
+      <i class="bi bi-arrow-clockwise me-2"></i>Start Over
+    </button>
+  `
       })
   })
 
   // Display career paths
-  function displayCareerPaths(paths) {
-    careerPaths.innerHTML = ""
+  function displayCareerPaths(data) {
+    console.log("Received career paths data:", data)
 
-    if (!paths || paths.length === 0) {
+    const sameFieldCareers = data.sameFieldCareers || []
+    const differentFieldCareers = data.differentFieldCareers || []
+
+    console.log("Same field careers:", sameFieldCareers)
+    console.log("Different field careers:", differentFieldCareers)
+
+    const sameFieldContainer = document.querySelector(".same-field-careers")
+    const differentFieldContainer = document.querySelector(".different-field-careers")
+
+    // Clear containers
+    sameFieldContainer.innerHTML = ""
+    differentFieldContainer.innerHTML = ""
+
+    if (sameFieldCareers.length === 0 && differentFieldCareers.length === 0) {
       careerPaths.innerHTML = `
         <div class="alert alert-info">
           <i class="bi bi-info-circle-fill me-2"></i>
@@ -367,20 +381,34 @@ document.addEventListener("DOMContentLoaded", () => {
       return
     }
 
-    // Sort paths by fit score (highest first)
-    paths.sort((a, b) => b.fitScore - a.fitScore)
-
-    const pathsHTML = paths
-      .map(
-        (path, index) => `
-      <div class="card career-path-card mb-3" data-career="${encodeURIComponent(path.title)}">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start mb-2">
-            <h3 class="card-title">${path.title}</h3>
-            <span class="badge bg-primary">${path.fitScore}% Match</span>
-          </div>
-          <p class="card-text">${path.description}</p>
-          <div class="d-flex justify-content-end">
+    // Display same field careers
+    if (sameFieldCareers.length > 0) {
+      const pathsHTML = sameFieldCareers
+        .map(
+          (path) => `
+        <div class="card career-path-card mb-3" data-career="${encodeURIComponent(path.Title || path.title || "")}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h3 class="card-title">
+                ${path.Title || path.title || "Career Path"}
+                <span class="career-type-badge badge-same-field">Same Field</span>
+              </h3>
+              <span class="badge bg-primary">${path["Fit Score"] || path.fitScore || 0}% Match</span>
+            </div>
+            <p class="card-text">${path.Description || path.description || "No description available."}</p>
+            ${
+              path["Key transferable skills"] || path.transferableSkills
+                ? `
+            <div class="transferable-skills">
+              <h6><i class="bi bi-arrow-right-circle me-1"></i>Transferable Skills</h6>
+              <div>
+                ${(path["Key transferable skills"] || path.transferableSkills || []).map((skill) => `<span class="skill-tag">${skill}</span>`).join("")}
+              </div>
+            </div>
+          `
+                : ""
+            }
+          <div class="d-flex justify-content-end mt-3">
             <button class="btn btn-outline-primary btn-sm view-plan-btn">
               <i class="bi bi-signpost-split me-1"></i>View Transition Plan
             </button>
@@ -388,10 +416,66 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
     `,
-      )
-      .join("")
+        )
+        .join("")
 
-    careerPaths.innerHTML = pathsHTML
+      sameFieldContainer.innerHTML = pathsHTML
+    } else {
+      sameFieldContainer.innerHTML = `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          No career paths found in the same field.
+        </div>
+      `
+    }
+
+    // Display different field careers
+    if (differentFieldCareers.length > 0) {
+      const pathsHTML = differentFieldCareers
+        .map(
+          (path) => `
+        <div class="card career-path-card mb-3" data-career="${encodeURIComponent(path.Title || path.title || "")}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h3 class="card-title">
+                ${path.Title || path.title || "Career Path"}
+                <span class="career-type-badge badge-different-field">Different Field</span>
+              </h3>
+              <span class="badge bg-primary">${path["Fit Score"] || path.fitScore || 0}% Match</span>
+            </div>
+            <p class="card-text">${path.Description || path.description || "No description available."}</p>
+            ${
+              path["Key transferable skills"] || path.transferableSkills
+                ? `
+            <div class="transferable-skills">
+              <h6><i class="bi bi-arrow-right-circle me-1"></i>Transferable Skills</h6>
+              <div>
+                ${(path["Key transferable skills"] || path.transferableSkills || []).map((skill) => `<span class="skill-tag">${skill}</span>`).join("")}
+              </div>
+            </div>
+          `
+                : ""
+            }
+          <div class="d-flex justify-content-end mt-3">
+            <button class="btn btn-outline-primary btn-sm view-plan-btn">
+              <i class="bi bi-signpost-split me-1"></i>View Transition Plan
+            </button>
+          </div>
+        </div>
+      </div>
+    `,
+        )
+        .join("")
+
+      differentFieldContainer.innerHTML = pathsHTML
+    } else {
+      differentFieldContainer.innerHTML = `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          No career paths found in different fields.
+        </div>
+      `
+    }
 
     // Add click event to career path cards
     document.querySelectorAll(".career-path-card").forEach((card) => {
@@ -482,16 +566,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Display transition plan
   function displayTransitionPlan(plan) {
+    console.log("Received transition plan:", plan)
+
     if (!plan || !plan.steps || plan.steps.length === 0) {
       transitionPlan.innerHTML = `
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle-fill me-2"></i>
-          No transition plan available. Please try a different career path.
-        </div>
-        <button class="btn btn-primary" id="tryDifferentPath">
-          <i class="bi bi-arrow-left me-2"></i>Try Different Path
-        </button>
-      `
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle-fill me-2"></i>
+      No transition plan available. Please try a different career path.
+    </div>
+    <button class="btn btn-primary" id="tryDifferentPath">
+      <i class="bi bi-arrow-left me-2"></i>Try Different Path
+    </button>
+  `
 
       document.getElementById("tryDifferentPath").addEventListener("click", () => {
         goToStep(3)
@@ -500,55 +586,65 @@ document.addEventListener("DOMContentLoaded", () => {
       return
     }
 
+    const transitionType = plan.transitionType || "same-field"
+    const transitionTypeClass = transitionType === "same-field" ? "badge-same-field" : "badge-different-field"
+    const transitionTypeText = transitionType === "same-field" ? "Same Field" : "Different Field"
+    const transitionTypeIcon = transitionType === "same-field" ? "arrow-up-right-circle" : "shuffle"
+
     const stepsHTML = plan.steps
       .map(
         (step, index) => `
-      <div class="transition-step">
-        <h4>${index + 1}. ${step.title}</h4>
-        <p>${step.description}</p>
-        ${
-          step.resources
-            ? `
-          <div class="resources">
-            <strong><i class="bi bi-link-45deg me-1"></i>Resources:</strong>
-            <ul>
-              ${step.resources
-                .map(
-                  (resource) => `
-                <li><a href="${resource.url}" target="_blank">${resource.title} <i class="bi bi-box-arrow-up-right ms-1"></i></a></li>
-              `,
-                )
-                .join("")}
-            </ul>
-          </div>
-        `
-            : ""
-        }
-      </div>
-    `,
+<div class="transition-step">
+  <h4>${index + 1}. ${step.title}</h4>
+  <p>${step.description}</p>
+  ${
+    step.resources && Array.isArray(step.resources) && step.resources.length > 0
+      ? `
+    <div class="resources">
+      <strong><i class="bi bi-link-45deg me-1"></i>Resources:</strong>
+      <ul>
+        ${step.resources
+          .map(
+            (resource) => `
+          <li><a href="${resource.url}" target="_blank">${resource.title || resource.name || "Resource"} <i class="bi bi-box-arrow-up-right ms-1"></i></a></li>
+        `,
+          )
+          .join("")}
+      </ul>
+    </div>
+  `
+      : ""
+  }
+</div>
+`,
       )
       .join("")
 
     transitionPlan.innerHTML = `
-      <div class="plan-overview mb-4 p-3 rounded" style="background-color: rgba(67, 97, 238, 0.05);">
-        <h5><i class="bi bi-info-circle me-2"></i>Overview</h5>
-        <p>${plan.overview}</p>
-      </div>
-      <div class="transition-timeline">
-        ${stepsHTML}
-      </div>
-      <div class="mt-4 d-flex justify-content-center gap-3">
-        <button class="btn btn-primary" onclick="window.print()">
-          <i class="bi bi-printer me-2"></i>Print Plan
-        </button>
-        <button class="btn btn-outline-primary" id="saveAsPdf">
-          <i class="bi bi-file-earmark-pdf me-2"></i>Save as PDF
-        </button>
-        <button class="btn btn-outline-primary" id="shareBtn">
-          <i class="bi bi-share me-2"></i>Share
-        </button>
-      </div>
-    `
+<div class="plan-overview mb-4 p-3 rounded" style="background-color: rgba(67, 97, 238, 0.05);">
+  <div class="d-flex justify-content-between align-items-start mb-2">
+    <h5><i class="bi bi-info-circle me-2"></i>Overview</h5>
+    <span class="career-type-badge ${transitionTypeClass}">
+      <i class="bi bi-${transitionTypeIcon} me-1"></i>${transitionTypeText}
+    </span>
+  </div>
+  <p>${plan.overview}</p>
+</div>
+<div class="transition-timeline">
+  ${stepsHTML}
+</div>
+<div class="mt-4 d-flex justify-content-center gap-3">
+  <button class="btn btn-primary" onclick="window.print()">
+    <i class="bi bi-printer me-2"></i>Print Plan
+  </button>
+  <button class="btn btn-outline-primary" id="saveAsPdf">
+    <i class="bi bi-file-earmark-pdf me-2"></i>Save as PDF
+  </button>
+  <button class="btn btn-outline-primary" id="shareBtn">
+    <i class="bi bi-share me-2"></i>Share
+  </button>
+</div>
+`
 
     // Add event listeners for buttons
     document.getElementById("saveAsPdf").addEventListener("click", () => {
