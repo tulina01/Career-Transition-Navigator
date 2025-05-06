@@ -1,4 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Add this near the top of the file, after the document.addEventListener("DOMContentLoaded", () => { line
+  // Check if user is logged in
+  const user = JSON.parse(localStorage.getItem("user"))
+  const isLoggedIn = !!user
+
   // Form elements
   const resumeForm = document.getElementById("resumeForm")
   const reasonsForm = document.getElementById("reasonsForm")
@@ -654,6 +659,185 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("shareBtn").addEventListener("click", () => {
       showToast("info", "Info", "Share functionality would be implemented here.")
     })
+  }
+
+  // Add save functionality to career paths and transition plans
+  function addSaveButtonsToCareerPaths() {
+    if (isLoggedIn) {
+      document.querySelectorAll(".career-path-card").forEach((card) => {
+        // Check if save button already exists
+        if (!card.querySelector(".save-btn")) {
+          const saveBtn = document.createElement("button")
+          saveBtn.className = "btn btn-sm btn-outline-primary save-btn"
+          saveBtn.innerHTML = '<i class="bi bi-bookmark"></i>'
+          saveBtn.title = "Save to profile"
+
+          saveBtn.addEventListener("click", async (e) => {
+            e.stopPropagation() // Prevent card click
+
+            const careerTitle = decodeURIComponent(card.dataset.career)
+            const description = card.querySelector(".card-text").textContent
+            const fitScore = Number.parseInt(card.querySelector(".badge").textContent)
+            const type = card.querySelector(".career-type-badge").textContent.trim().toLowerCase().includes("same")
+              ? "same-field"
+              : "different-field"
+
+            const skillTags = Array.from(card.querySelectorAll(".skill-tag")).map((tag) => tag.textContent)
+
+            try {
+              const response = await fetch("/api/profile/career-paths", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  careerPath: {
+                    title: careerTitle,
+                    description,
+                    fitScore,
+                    type,
+                    transferableSkills: skillTags,
+                  },
+                }),
+              })
+
+              if (!response.ok) {
+                throw new Error("Failed to save career path")
+              }
+
+              // Change button to saved state
+              saveBtn.innerHTML = '<i class="bi bi-bookmark-check-fill"></i>'
+              saveBtn.classList.remove("btn-outline-primary")
+              saveBtn.classList.add("btn-success")
+              saveBtn.title = "Saved to profile"
+
+              // Show toast notification
+              showToast("success", "Success", "Career path saved to your profile!")
+            } catch (error) {
+              console.error("Error saving career path:", error)
+              showToast("error", "Error", "Failed to save career path. Please try again.")
+            }
+          })
+
+          card.appendChild(saveBtn)
+        }
+      })
+    }
+  }
+
+  // Add save functionality to transition plan
+  function addSaveButtonToTransitionPlan() {
+    if (isLoggedIn && document.getElementById("transitionPlan") && !document.getElementById("savePlanBtn")) {
+      const transitionPlan = document.getElementById("transitionPlan")
+      const planOverview = transitionPlan.querySelector(".plan-overview")
+
+      if (planOverview) {
+        const saveBtn = document.createElement("button")
+        saveBtn.id = "savePlanBtn"
+        saveBtn.className = "btn btn-outline-primary btn-sm"
+        saveBtn.innerHTML = '<i class="bi bi-bookmark me-1"></i>Save Plan'
+
+        saveBtn.addEventListener("click", async () => {
+          const careerTitle = document
+            .getElementById("selectedCareerTitle")
+            .textContent.replace("Transition Plan: ", "")
+
+          // Extract plan data
+          const overview = planOverview.querySelector("p").textContent
+          const transitionType = planOverview
+            .querySelector(".career-type-badge")
+            .textContent.trim()
+            .toLowerCase()
+            .includes("same")
+            ? "same-field"
+            : "different-field"
+
+          const steps = Array.from(transitionPlan.querySelectorAll(".transition-step")).map((step) => {
+            const title = step.querySelector("h4").textContent.replace(/^\d+\.\s+/, "")
+            const description = step.querySelector("p").textContent
+
+            const resources = []
+            const resourceLinks = step.querySelectorAll(".resources a")
+            if (resourceLinks.length) {
+              resourceLinks.forEach((link) => {
+                resources.push({
+                  title: link.textContent.trim().replace(" ", ""),
+                  url: link.href,
+                })
+              })
+            }
+
+            return { title, description, resources }
+          })
+
+          const plan = {
+            overview,
+            transitionType,
+            steps,
+          }
+
+          try {
+            const response = await fetch("/api/profile/transition-plans", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                careerTitle,
+                plan,
+              }),
+            })
+
+            if (!response.ok) {
+              throw new Error("Failed to save transition plan")
+            }
+
+            // Change button to saved state
+            saveBtn.innerHTML = '<i class="bi bi-bookmark-check-fill me-1"></i>Saved'
+            saveBtn.classList.remove("btn-outline-primary")
+            saveBtn.classList.add("btn-success")
+
+            // Show toast notification
+            showToast("success", "Success", "Transition plan saved to your profile!")
+          } catch (error) {
+            console.error("Error saving transition plan:", error)
+            showToast("error", "Error", "Failed to save transition plan. Please try again.")
+          }
+        })
+
+        // Add the save button to the actions div
+        const actionsDiv = transitionPlan.querySelector(".mt-4.d-flex")
+        if (actionsDiv) {
+          actionsDiv.prepend(saveBtn)
+        }
+      }
+    }
+  }
+
+  // Modify the displayCareerPaths function to add save buttons
+  const originalDisplayCareerPaths = displayCareerPaths
+  displayCareerPaths = (data) => {
+    originalDisplayCareerPaths(data)
+
+    // Add save buttons after career paths are displayed
+    if (isLoggedIn) {
+      setTimeout(() => {
+        addSaveButtonsToCareerPaths()
+      }, 100)
+    }
+  }
+
+  // Modify the displayTransitionPlan function to add save button
+  const originalDisplayTransitionPlan = displayTransitionPlan
+  displayTransitionPlan = (plan) => {
+    originalDisplayTransitionPlan(plan)
+
+    // Add save button after transition plan is displayed
+    if (isLoggedIn) {
+      setTimeout(() => {
+        addSaveButtonToTransitionPlan()
+      }, 100)
+    }
   }
 
   // Back to career paths button

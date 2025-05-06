@@ -8,6 +8,13 @@ const mammoth = require("mammoth")
 const axios = require("axios")
 require("dotenv").config()
 
+// Add these imports at the top of the file, after the existing imports
+const cookieParser = require("cookie-parser")
+const User = require("./models/user")
+const { isAuthenticated } = require("./middleware/auth")
+const authRoutes = require("./routes/auth")
+const profileRoutes = require("./routes/profile")
+
 // Initialize Express app
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -43,6 +50,44 @@ const upload = multer({
 // Middleware
 app.use(express.json())
 app.use(express.static("public"))
+app.use(cookieParser())
+
+// Debug middleware to log requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`)
+  next()
+})
+
+// Debug middleware to log auth status
+app.use((req, res, next) => {
+  console.log(`Auth status for ${req.method} ${req.url}: ${req.cookies.token ? "Has token" : "No token"}`)
+  next()
+})
+
+// Add authentication middleware
+app.use(isAuthenticated)
+
+// Add routes
+app.use("/api/auth", authRoutes)
+app.use("/api/profile", profileRoutes)
+
+// Test route to check authentication
+app.get("/api/auth-test", isAuthenticated, (req, res) => {
+  if (req.user) {
+    return res.json({
+      authenticated: true,
+      user: {
+        id: req.user._id,
+        email: req.user.email,
+        name: req.user.name,
+      },
+    })
+  } else {
+    return res.json({
+      authenticated: false,
+    })
+  }
+})
 
 // Configure OpenAI API
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
@@ -124,10 +169,10 @@ async function extractTextFromDOCX(filePath) {
 }
 
 // Define User Schema
-let User
+let userModel
 try {
   // Try to get the model if it already exists
-  User = mongoose.model("User")
+  userModel = mongoose.model("User")
 } catch (e) {
   // Define the model if it doesn't exist
   const userSchema = new mongoose.Schema({
@@ -197,7 +242,7 @@ try {
     },
   })
 
-  User = mongoose.model("User", userSchema)
+  userModel = mongoose.model("User", userSchema)
 }
 
 // Helper function to parse resume text using OpenAI with retry logic
@@ -474,6 +519,17 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
     const extractedInfo = await parseResumeWithOpenAI(resumeText)
 
     console.log("Parsed resume data:", extractedInfo)
+
+    // If user is logged in, save the resume to their profile
+    if (req.user) {
+      req.user.resumes.push({
+        fileName: req.file.originalname,
+        uploadDate: new Date(),
+        parsedData: extractedInfo,
+      })
+
+      await req.user.save()
+    }
 
     // Clean up the uploaded file
     fs.unlinkSync(filePath)
@@ -847,6 +903,19 @@ app.post("/api/career-recommendations", async (req, res) => {
     }
 
     console.log("Sending career paths to client:", careerPaths)
+
+    // If user is logged in, store the latest resume data
+    if (req.user && req.user.resumes.length > 0) {
+      const latestResume = req.user.resumes[req.user.resumes.length - 1]
+      latestResume.careerRecommendations = {
+        reasons,
+        sameFieldCareers: careerPaths.sameFieldCareers || [],
+        differentFieldCareers: careerPaths.differentFieldCareers || [],
+      }
+
+      await req.user.save()
+    }
+
     res.json({
       sameFieldCareers: careerPaths.sameFieldCareers || [],
       differentFieldCareers: careerPaths.differentFieldCareers || [],
@@ -1054,6 +1123,18 @@ app.post("/api/transition-plan", async (req, res) => {
     }
 
     console.log("Sending transition plan to client:", transitionPlan)
+
+    // If user is logged in, save the transition plan
+    if (req.user) {
+      req.user.transitionPlans.push({
+        careerTitle,
+        plan: transitionPlan,
+        savedAt: new Date(),
+      })
+
+      await req.user.save()
+    }
+
     res.json({ plan: transitionPlan })
   } catch (error) {
     console.error("Error getting transition plan:", error)
@@ -1061,10 +1142,8 @@ app.post("/api/transition-plan", async (req, res) => {
   }
 })
 
-// Connect to MongoDB with better error handling
-let isMongoConnected = false
-
 // Function to connect to MongoDB
+let isMongoConnected = false
 async function connectToMongoDB() {
   try {
     // Skip MongoDB connection in development if needed
@@ -1073,11 +1152,16 @@ async function connectToMongoDB() {
       return true
     }
 
-    await mongoose.connect("mongodb://localhost:27017/career-navigator", {
+    // Use environment variable for MongoDB URI if available, otherwise use local
+    const mongoURI = process.env.MONGODB_URI || "mongodb://localhost:27017/career-navigator"
+    console.log(`Attempting to connect to MongoDB at: ${mongoURI.includes("@") ? mongoURI.split("@")[1] : "localhost"}`)
+
+    await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     })
-    console.log("Connected to MongoDB")
+
+    console.log("Connected to MongoDB successfully")
     isMongoConnected = true
     return true
   } catch (err) {
@@ -1086,6 +1170,16 @@ async function connectToMongoDB() {
     return false
   }
 }
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("Global error handler caught:", err)
+  res.status(500).json({
+    error: "Server error",
+    message: err.message,
+    stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+  })
+})
 
 // Start server
 async function startServer() {
