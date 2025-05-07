@@ -522,13 +522,23 @@ app.post("/api/parse-resume", upload.single("resume"), async (req, res) => {
 
     // If user is logged in, save the resume to their profile
     if (req.user) {
-      req.user.resumes.push({
-        fileName: req.file.originalname,
-        uploadDate: new Date(),
-        parsedData: extractedInfo,
-      })
+      try {
+        // Create a new resume object without any career paths
+        const newResume = {
+          fileName: req.file.originalname,
+          uploadDate: new Date(),
+          parsedData: extractedInfo,
+        }
 
-      await req.user.save()
+        // Add the resume to the user's resumes array
+        req.user.resumes.push(newResume)
+
+        await req.user.save()
+        console.log("Resume saved to user profile successfully")
+      } catch (saveError) {
+        console.error("Error saving resume to user profile:", saveError)
+        // Continue with the response even if saving to profile fails
+      }
     }
 
     // Clean up the uploaded file
@@ -787,8 +797,20 @@ function getFallbackCareerPaths(resumeData, reasons) {
 
   // Ensure we have exactly 5 careers in each category
   return {
-    sameFieldCareers: sameFieldCareers.slice(0, 5),
-    differentFieldCareers: differentFieldCareers.slice(0, 5),
+    sameFieldCareers: sameFieldCareers.slice(0, 5).map((career) => ({
+      title: career.title || "Untitled Career Path",
+      description: career.description || "No description available.",
+      fitScore: career.fitScore || 0,
+      type: career.type || "same-field",
+      transferableSkills: career.transferableSkills || [],
+    })),
+    differentFieldCareers: differentFieldCareers.slice(0, 5).map((career) => ({
+      title: career.title || "Untitled Career Path",
+      description: career.description || "No description available.",
+      fitScore: career.fitScore || 0,
+      type: career.type || "different-field",
+      transferableSkills: career.transferableSkills || [],
+    })),
   }
 }
 
@@ -906,14 +928,20 @@ app.post("/api/career-recommendations", async (req, res) => {
 
     // If user is logged in, store the latest resume data
     if (req.user && req.user.resumes.length > 0) {
-      const latestResume = req.user.resumes[req.user.resumes.length - 1]
-      latestResume.careerRecommendations = {
-        reasons,
-        sameFieldCareers: careerPaths.sameFieldCareers || [],
-        differentFieldCareers: careerPaths.differentFieldCareers || [],
-      }
+      try {
+        const latestResume = req.user.resumes[req.user.resumes.length - 1]
+        latestResume.careerRecommendations = {
+          reasons,
+          sameFieldCareers: careerPaths.sameFieldCareers || [],
+          differentFieldCareers: careerPaths.differentFieldCareers || [],
+        }
 
-      await req.user.save()
+        await req.user.save()
+        console.log("Career recommendations saved to user profile")
+      } catch (saveError) {
+        console.error("Error saving career recommendations to user profile:", saveError)
+        // Continue with the response even if saving to profile fails
+      }
     }
 
     res.json({
@@ -922,7 +950,7 @@ app.post("/api/career-recommendations", async (req, res) => {
     })
   } catch (error) {
     console.error("Error getting career recommendations:", error)
-    res.status(500).json({ error: "Error getting career recommendations" })
+    res.status(500).json({ error: "Error getting career recommendations", details: error.message })
   }
 })
 

@@ -246,7 +246,9 @@ document.addEventListener("DOMContentLoaded", () => {
         })
           .then((response) => {
             if (!response.ok) {
-              throw new Error("Network response was not ok")
+              return response.json().then((data) => {
+                throw new Error(data.error || data.details || "Network response was not ok")
+              })
             }
             return response.json()
           })
@@ -262,7 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
           })
           .catch((error) => {
             console.error("Error parsing resume:", error)
-            showToast("error", "Error", "Error parsing resume. Please try again.")
+            showToast("error", "Error", `Error parsing resume: ${error.message}. Please try again.`)
             uploadProgress.classList.add("d-none")
             progressBarUpload.style.width = "0%"
           })

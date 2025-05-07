@@ -151,37 +151,43 @@ document.addEventListener("DOMContentLoaded", () => {
     resumes.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate))
 
     const resumesHTML = resumes
-      .map(
-        (resume) => `
-      <div class="resume-item" data-id="${resume._id}">
-        <div class="d-flex justify-content-between align-items-start">
-          <div>
-            <h5 class="mb-1">${resume.fileName}</h5>
-            <p class="resume-date mb-2"><i class="bi bi-calendar3 me-1"></i>${formatDate(resume.uploadDate)}</p>
-            <div>
-              <span class="badge bg-light text-dark me-1">
-                <i class="bi bi-briefcase me-1"></i>${resume.parsedData.jobHistory?.length || 0} Jobs
-              </span>
-              <span class="badge bg-light text-dark me-1">
-                <i class="bi bi-mortarboard me-1"></i>${resume.parsedData.education?.length || 0} Education
-              </span>
-              <span class="badge bg-light text-dark">
-                <i class="bi bi-tools me-1"></i>${resume.parsedData.skills?.length || 0} Skills
-              </span>
+      .map((resume) => {
+        // Make sure parsedData exists and has the expected structure
+        const parsedData = resume.parsedData || {}
+        const jobCount = parsedData.jobHistory?.length || 0
+        const educationCount = parsedData.education?.length || 0
+        const skillsCount = parsedData.skills?.length || 0
+
+        return `
+            <div class="resume-item" data-id="${resume._id}">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h5 class="mb-1">${resume.fileName}</h5>
+                  <p class="resume-date mb-2"><i class="bi bi-calendar3 me-1"></i>${formatDate(resume.uploadDate)}</p>
+                  <div>
+                    <span class="badge bg-light text-dark me-1">
+                      <i class="bi bi-briefcase me-1"></i>${jobCount} Jobs
+                    </span>
+                    <span class="badge bg-light text-dark me-1">
+                      <i class="bi bi-mortarboard me-1"></i>${educationCount} Education
+                    </span>
+                    <span class="badge bg-light text-dark">
+                      <i class="bi bi-tools me-1"></i>${skillsCount} Skills
+                    </span>
+                  </div>
+                </div>
+                <div class="resume-actions">
+                  <button class="btn btn-icon view-resume-btn" title="View Resume">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="btn btn-icon delete-resume-btn" title="Delete Resume">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="resume-actions">
-            <button class="btn btn-icon view-resume-btn" title="View Resume">
-              <i class="bi bi-eye"></i>
-            </button>
-            <button class="btn btn-icon delete-resume-btn" title="Delete Resume">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    `,
-      )
+          `
+      })
       .join("")
 
     resumesList.innerHTML = resumesHTML
@@ -258,7 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return response.json()
           })
           .then((data) => {
-            const parsedData = data.parsedData
+            const parsedData = data.parsedData || {}
 
             // Create the HTML for the resume
             let resumeHTML = `
@@ -610,37 +616,43 @@ document.addEventListener("DOMContentLoaded", () => {
     transitionPlans.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt))
 
     const transitionPlansHTML = transitionPlans
-      .map(
-        (plan) => `
-      <div class="transition-plan-item" data-id="${plan._id}">
-        <div class="d-flex justify-content-between align-items-start">
-          <div>
-            <div class="d-flex align-items-center mb-1">
-              <h5 class="mb-0">${plan.careerTitle}</h5>
-              <span class="badge ${plan.plan.transitionType === "same-field" ? "badge-same-field" : "badge-different-field"} ms-2">
-                ${plan.plan.transitionType === "same-field" ? "Same Field" : "Different Field"}
-              </span>
+      .map((plan) => {
+        // Make sure plan.plan exists and has the expected structure
+        const planData = plan.plan || {}
+        const overview = planData.overview || "No overview available"
+        const transitionType = planData.transitionType || "different-field"
+        const steps = planData.steps || []
+
+        return `
+            <div class="transition-plan-item" data-id="${plan._id}">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="d-flex align-items-center mb-1">
+                    <h5 class="mb-0">${plan.careerTitle || "Untitled Plan"}</h5>
+                    <span class="badge ${transitionType === "same-field" ? "badge-same-field" : "badge-different-field"} ms-2">
+                      ${transitionType === "same-field" ? "Same Field" : "Different Field"}
+                    </span>
+                  </div>
+                  <p class="plan-date mb-2"><i class="bi bi-calendar3 me-1"></i>${formatDate(plan.savedAt)}</p>
+                  <p class="mb-2">${overview.substring(0, 120)}${overview.length > 120 ? "..." : ""}</p>
+                  <div>
+                    <span class="badge bg-light text-dark">
+                      <i class="bi bi-list-check me-1"></i>${steps.length} Steps
+                    </span>
+                  </div>
+                </div>
+                <div class="plan-actions">
+                  <button class="btn btn-icon view-plan-btn" title="View Transition Plan">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="btn btn-icon delete-plan-btn" title="Delete Transition Plan">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </div>
             </div>
-            <p class="plan-date mb-2"><i class="bi bi-calendar3 me-1"></i>${formatDate(plan.savedAt)}</p>
-            <p class="mb-2">${plan.plan.overview.substring(0, 120)}${plan.plan.overview.length > 120 ? "..." : ""}</p>
-            <div>
-              <span class="badge bg-light text-dark">
-                <i class="bi bi-list-check me-1"></i>${plan.plan.steps.length} Steps
-              </span>
-            </div>
-          </div>
-          <div class="plan-actions">
-            <button class="btn btn-icon view-plan-btn" title="View Transition Plan">
-              <i class="bi bi-eye"></i>
-            </button>
-            <button class="btn btn-icon delete-plan-btn" title="Delete Transition Plan">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-    `,
-      )
+          `
+      })
       .join("")
 
     transitionPlansList.innerHTML = transitionPlansHTML
@@ -696,64 +708,66 @@ document.addEventListener("DOMContentLoaded", () => {
             return response.json()
           })
           .then((data) => {
-            const plan = data.plan
+            const plan = data.plan || {}
 
             // Populate the modal
             const modal = document.getElementById("transitionPlanModal")
             const modalTitle = document.getElementById("transitionPlanModalLabel")
             const modalBody = document.getElementById("transitionPlanModalBody")
 
-            modalTitle.textContent = `Transition Plan: ${data.careerTitle}`
+            modalTitle.textContent = `Transition Plan: ${data.careerTitle || "Untitled Plan"}`
 
             // Create the HTML for the plan
             const transitionType = plan.transitionType || "different-field"
             const transitionTypeClass = transitionType === "same-field" ? "badge-same-field" : "badge-different-field"
             const transitionTypeText = transitionType === "same-field" ? "Same Field" : "Different Field"
             const transitionTypeIcon = transitionType === "same-field" ? "arrow-up-right-circle" : "shuffle"
+            const overview = plan.overview || "No overview available"
+            const steps = plan.steps || []
 
-            const stepsHTML = plan.steps
+            const stepsHTML = steps
               .map(
                 (step, index) => `
-            <div class="transition-step">
-              <h4>${index + 1}. ${step.title}</h4>
-              <p>${step.description}</p>
-              ${
-                step.resources && step.resources.length > 0
-                  ? `
-                <div class="resources">
-                  <strong><i class="bi bi-link-45deg me-1"></i>Resources:</strong>
-                  <ul>
-                    ${step.resources
-                      .map(
-                        (resource) => `
-                      <li><a href="${resource.url}" target="_blank">${resource.title || resource.name || "Resource"} <i class="bi bi-box-arrow-up-right ms-1"></i></a></li>
-                    `,
-                      )
-                      .join("")}
-                  </ul>
+                <div class="transition-step">
+                  <h4>${index + 1}. ${step.title || "Untitled Step"}</h4>
+                  <p>${step.description || "No description available"}</p>
+                  ${
+                    step.resources && step.resources.length > 0
+                      ? `
+                    <div class="resources">
+                      <strong><i class="bi bi-link-45deg me-1"></i>Resources:</strong>
+                      <ul>
+                        ${step.resources
+                          .map(
+                            (resource) => `
+                          <li><a href="${resource.url || "#"}" target="_blank">${resource.title || resource.name || "Resource"} <i class="bi bi-box-arrow-up-right ms-1"></i></a></li>
+                        `,
+                          )
+                          .join("")}
+                      </ul>
+                    </div>
+                  `
+                      : ""
+                  }
                 </div>
-              `
-                  : ""
-              }
-            </div>
-          `,
+              `,
               )
               .join("")
 
             modalBody.innerHTML = `
-            <div class="plan-overview mb-4 p-3 rounded" style="background-color: rgba(67, 97, 238, 0.05);">
-              <div class="d-flex justify-content-between align-items-start mb-2">
-                <h5><i class="bi bi-info-circle me-2"></i>Overview</h5>
-                <span class="career-type-badge ${transitionTypeClass}">
-                  <i class="bi bi-${transitionTypeIcon} me-1"></i>${transitionTypeText}
-                </span>
+              <div class="plan-overview mb-4 p-3 rounded" style="background-color: rgba(67, 97, 238, 0.05);">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h5><i class="bi bi-info-circle me-2"></i>Overview</h5>
+                  <span class="career-type-badge ${transitionTypeClass}">
+                    <i class="bi bi-${transitionTypeIcon} me-1"></i>${transitionTypeText}
+                  </span>
+                </div>
+                <p>${overview}</p>
               </div>
-              <p>${plan.overview}</p>
-            </div>
-            <div class="transition-timeline">
-              ${stepsHTML}
-            </div>
-          `
+              <div class="transition-timeline">
+                ${stepsHTML}
+              </div>
+            `
 
             // Show the modal
             const bsModal = new bootstrap.Modal(modal)
@@ -765,7 +779,7 @@ document.addEventListener("DOMContentLoaded", () => {
               printWindow.document.write(`
               <html>
                 <head>
-                  <title>Transition Plan: ${data.careerTitle}</title>
+                  <title>Transition Plan: ${data.careerTitle || "Untitled Plan"}</title>
                   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
                   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
                   <style>
@@ -781,10 +795,10 @@ document.addEventListener("DOMContentLoaded", () => {
                   </style>
                 </head>
                 <body>
-                  <h1>Transition Plan: ${data.careerTitle}</h1>
+                  <h1>Transition Plan: ${data.careerTitle || "Untitled Plan"}</h1>
                   <div class="plan-overview mb-4 p-3">
                     <h5>Overview</h5>
-                    <p>${plan.overview}</p>
+                    <p>${overview}</p>
                   </div>
                   <div class="transition-timeline">
                     ${stepsHTML}

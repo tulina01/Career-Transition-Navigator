@@ -441,25 +441,57 @@ header p.lead {
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
-  .card-body {
-    padding: 1.5rem;
+  header .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
-  .btn-lg {
-    padding: 0.75rem 1.5rem;
+  header h1 {
+    font-size: 1.5rem;
   }
 
-  .transition-step {
-    padding-left: 30px;
+  .auth-buttons {
+    display: flex;
+    margin-top: 1rem;
+    justify-content: center;
+    width: 100%;
   }
 
-  .transition-step:before {
-    width: 20px;
-    height: 20px;
+  .user-menu {
+    position: relative;
+    margin-left: auto;
   }
 
-  .transition-step:after {
-    left: 10px;
+  .user-menu .dropdown-toggle {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .dropdown-menu {
+    width: 200px;
+  }
+
+  .profile-nav {
+    display: flex;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+  }
+
+  .profile-nav .list-group-item {
+    white-space: nowrap;
+    margin-right: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  /* Adjust header layout for mobile */
+  header .d-flex {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  header .d-flex .user-menu {
+    margin-top: 1rem;
+    margin-left: 0;
   }
 }
 
@@ -803,25 +835,23 @@ header p.lead {
 
   .auth-buttons {
     display: flex;
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-  }
-
-  .auth-buttons .btn {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
+    margin-top: 1rem;
+    justify-content: center;
+    width: 100%;
   }
 
   .user-menu {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
+    position: relative;
+    margin-left: auto;
   }
 
   .user-menu .dropdown-toggle {
     padding: 0.4rem 0.8rem;
     font-size: 0.9rem;
+  }
+
+  .dropdown-menu {
+    width: 200px;
   }
 
   .profile-nav {
@@ -835,6 +865,26 @@ header p.lead {
     margin-right: 0.5rem;
     margin-bottom: 0;
   }
+
+  /* Adjust header layout for mobile */
+  header .d-flex {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  header .d-flex .user-menu {
+    margin-top: 1rem;
+    margin-left: 0;
+  }
+}
+
+/* Add styles for the logout button */
+.dropdown-item.text-danger {
+  color: var(--danger);
+}
+
+.dropdown-item.text-danger:hover {
+  background-color: rgba(248, 113, 113, 0.1);
 }
 
 /* Save Button Styles */
@@ -1018,4 +1068,125 @@ header p.lead {
   font-size: 0.85rem;
   padding: 0.25rem 0.5rem;
   border-radius: 50px;
+}
+
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.mobile-menu-toggle .btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.mobile-menu-toggle .bi-list {
+  font-size: 1.5rem;
+}
+
+/* Mobile Menu */
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  right: -250px;
+  width: 250px;
+  height: 100vh;
+  background-color: white;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+  z-index: 1050;
+  transition: right 0.3s ease;
+  padding: 1rem;
+}
+
+.mobile-menu.active {
+  right: 0;
+}
+
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.mobile-menu-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--gray);
+}
+
+.mobile-menu-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-menu-items a,
+.mobile-menu-items button {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: var(--dark);
+  transition: all 0.2s ease;
+  text-align: left;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+}
+
+.mobile-menu-items a:hover,
+.mobile-menu-items button:hover {
+  background-color: rgba(67, 97, 238, 0.05);
+}
+
+.mobile-menu-items a i,
+.mobile-menu-items button i {
+  margin-right: 0.75rem;
+  color: var(--primary);
+}
+
+.mobile-menu-items button.logout-btn {
+  color: var(--danger);
+}
+
+.mobile-menu-items button.logout-btn i {
+  color: var(--danger);
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (min-width: 768px) {
+  .mobile-menu,
+  .mobile-menu-overlay,
+  .mobile-menu-toggle {
+    display: none;
+  }
 }

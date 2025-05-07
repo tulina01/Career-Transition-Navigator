@@ -29,13 +29,18 @@ const userSchema = new mongoose.Schema({
         default: Date.now,
       },
       parsedData: Object,
+      careerRecommendations: {
+        reasons: [String],
+        sameFieldCareers: [Object],
+        differentFieldCareers: [Object],
+      },
     },
   ],
   careerPaths: [
     {
       title: {
         type: String,
-        required: true,
+        default: "Untitled Career Path",
       },
       description: {
         type: String,
