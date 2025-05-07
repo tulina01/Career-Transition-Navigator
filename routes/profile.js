@@ -24,30 +24,76 @@ router.get("/", async (req, res) => {
   }
 })
 
-// Save a career path
-router.post("/career-paths", async (req, res) => {
+// Get a specific resume
+router.get("/resumes/:resumeId", async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ error: "Not authenticated" })
     }
 
+    const { resumeId } = req.params
+
+    // Find the resume in the user's array
+    const resume = req.user.resumes.find((resume) => resume._id.toString() === resumeId)
+
+    if (!resume) {
+      return res.status(404).json({ error: "Resume not found" })
+    }
+
+    res.json({
+      fileName: resume.fileName,
+      uploadDate: resume.uploadDate,
+      parsedData: resume.parsedData,
+    })
+  } catch (error) {
+    console.error("Get resume error:", error)
+    res.status(500).json({ error: "Server error" })
+  }
+})
+
+// Save a career path
+router.post("/career-paths", async (req, res, next) => {
+  try {
+    console.log("Received request to save career path")
+
+    if (!req.user) {
+      console.log("User not authenticated")
+      return res.status(401).json({ error: "Not authenticated" })
+    }
+
+    console.log(`Authenticated user: ${req.user.email}`)
+
     const { careerPath } = req.body
+    console.log("Career path data received:", JSON.stringify(careerPath))
 
     if (!careerPath) {
       return res.status(400).json({ error: "Career path data is required" })
     }
 
-    req.user.careerPaths.push({
-      ...careerPath,
+    // Ensure all required fields are present with default values if missing
+    const sanitizedCareerPath = {
+      title: careerPath.title || "Untitled Career",
+      description: careerPath.description || "",
+      fitScore: typeof careerPath.fitScore === "number" ? careerPath.fitScore : 0,
+      type: careerPath.type || "same-field",
+      transferableSkills: Array.isArray(careerPath.transferableSkills) ? careerPath.transferableSkills : [],
       savedAt: new Date(),
-    })
+    }
 
+    console.log("Sanitized career path:", JSON.stringify(sanitizedCareerPath))
+
+    // Add to user's career paths
+    req.user.careerPaths.push(sanitizedCareerPath)
+
+    console.log("Saving user with new career path")
     await req.user.save()
+    console.log("User saved successfully")
 
     res.status(201).json({ message: "Career path saved successfully" })
   } catch (error) {
     console.error("Save career path error:", error)
-    res.status(500).json({ error: "Server error" })
+    // Pass to global error handler
+    next(error)
   }
 })
 
@@ -135,6 +181,33 @@ router.delete("/transition-plans/:planId", async (req, res) => {
     res.json({ message: "Transition plan deleted successfully" })
   } catch (error) {
     console.error("Delete transition plan error:", error)
+    res.status(500).json({ error: "Server error" })
+  }
+})
+
+// Get a specific transition plan
+router.get("/transition-plans/:planId", async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Not authenticated" })
+    }
+
+    const { planId } = req.params
+
+    // Find the transition plan in the user's array
+    const transitionPlan = req.user.transitionPlans.find((plan) => plan._id.toString() === planId)
+
+    if (!transitionPlan) {
+      return res.status(404).json({ error: "Transition plan not found" })
+    }
+
+    res.json({
+      careerTitle: transitionPlan.careerTitle,
+      plan: transitionPlan.plan,
+      savedAt: transitionPlan.savedAt,
+    })
+  } catch (error) {
+    console.error("Get transition plan error:", error)
     res.status(500).json({ error: "Server error" })
   }
 })

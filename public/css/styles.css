@@ -909,3 +909,113 @@ header p.lead {
 .input-group .form-control:focus + .input-group-text {
   border-color: var(--primary);
 }
+
+/* Modal Styles */
+.modal-content {
+  border-radius: 15px;
+  border: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-header .modal-title {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1.25rem 1.5rem;
+}
+
+.career-path-details h6 {
+  color: var(--primary);
+  margin-bottom: 0.75rem;
+}
+
+/* Resume Viewer Styles */
+.resume-view {
+  padding: 10px;
+}
+
+.resume-section {
+  margin-bottom: 30px;
+}
+
+.section-title {
+  color: var(--primary);
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 5px;
+}
+
+.resume-item-card {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.resume-item-card:last-child {
+  border-bottom: none;
+}
+
+.year-badge {
+  background-color: rgba(67, 97, 238, 0.1);
+  color: var(--primary);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.company,
+.institution {
+  color: #555;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.field {
+  color: #666;
+  font-style: italic;
+  margin-bottom: 5px;
+}
+
+.responsibilities,
+.achievements {
+  margin-top: 10px;
+}
+
+.skills-container,
+.languages-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.certification-list {
+  padding-left: 20px;
+  margin-bottom: 0;
+}
+
+.certification-list li {
+  margin-bottom: 5px;
+}
+
+.language-tag {
+  display: inline-block;
+  background-color: rgba(76, 201, 240, 0.1);
+  color: var(--secondary);
+  font-size: 0.85rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 50px;
+}
