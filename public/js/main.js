@@ -740,6 +740,10 @@ document.addEventListener("DOMContentLoaded", () => {
         saveBtn.innerHTML = '<i class="bi bi-bookmark me-1"></i>Save Plan'
 
         saveBtn.addEventListener("click", async () => {
+          // Disable the button to prevent multiple clicks
+          saveBtn.disabled = true
+          saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Saving...'
+
           const careerTitle = document
             .getElementById("selectedCareerTitle")
             .textContent.replace("Transition Plan: ", "")
@@ -798,11 +802,17 @@ document.addEventListener("DOMContentLoaded", () => {
             saveBtn.innerHTML = '<i class="bi bi-bookmark-check-fill me-1"></i>Saved'
             saveBtn.classList.remove("btn-outline-primary")
             saveBtn.classList.add("btn-success")
+            saveBtn.disabled = true // Keep button disabled after saving
 
             // Show toast notification
             showToast("success", "Success", "Transition plan saved to your profile!")
           } catch (error) {
             console.error("Error saving transition plan:", error)
+
+            // Re-enable the button if there's an error
+            saveBtn.disabled = false
+            saveBtn.innerHTML = '<i class="bi bi-bookmark me-1"></i>Save Plan'
+
             showToast("error", "Error", "Failed to save transition plan. Please try again.")
           }
         })

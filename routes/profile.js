@@ -110,11 +110,24 @@ router.post("/transition-plans", async (req, res) => {
       return res.status(400).json({ error: "Career title and plan are required" })
     }
 
-    req.user.transitionPlans.push({
-      careerTitle,
-      plan,
-      savedAt: new Date(),
-    })
+    // Check if a plan with the same career title already exists
+    const existingPlanIndex = req.user.transitionPlans.findIndex((p) => p.careerTitle === careerTitle)
+
+    if (existingPlanIndex !== -1) {
+      // Update existing plan instead of adding a new one
+      req.user.transitionPlans[existingPlanIndex] = {
+        careerTitle,
+        plan,
+        savedAt: new Date(),
+      }
+    } else {
+      // Add new plan
+      req.user.transitionPlans.push({
+        careerTitle,
+        plan,
+        savedAt: new Date(),
+      })
+    }
 
     await req.user.save()
 

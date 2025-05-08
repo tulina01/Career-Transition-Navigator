@@ -224,7 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     })
 
-    // Also add save buttons to transition steps
+    // Add save functionality to transition steps
     document.querySelectorAll(".transition-step").forEach((step) => {
       // Check if save button already exists
       if (!step.querySelector(".save-btn") && document.getElementById("selectedCareerTitle")) {
@@ -235,6 +235,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         saveBtn.addEventListener("click", async (e) => {
           e.stopPropagation()
+
+          // Disable the button to prevent multiple clicks
+          saveBtn.disabled = true
+          saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>'
 
           const careerTitle = document
             .getElementById("selectedCareerTitle")
@@ -296,6 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
             saveBtn.classList.remove("btn-outline-primary")
             saveBtn.classList.add("btn-success")
             saveBtn.title = "Saved to profile"
+            saveBtn.disabled = true // Keep button disabled after saving
 
             // Show toast notification
             const toastContainer = document.getElementById("toastContainer")
@@ -324,6 +329,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           } catch (error) {
             console.error("Error saving transition plan:", error)
+
+            // Re-enable the button if there's an error
+            saveBtn.disabled = false
+            saveBtn.innerHTML = '<i class="bi bi-bookmark"></i>'
 
             // Show error toast
             const toastContainer = document.getElementById("toastContainer")
