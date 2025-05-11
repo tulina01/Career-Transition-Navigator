@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const userMenu = document.getElementById("userMenu")
   const userName = document.getElementById("userName")
   const logoutBtn = document.getElementById("logoutBtn")
+  const mobileMenu = document.getElementById("mobileMenu")
 
   // Check if user is logged in
   const user = JSON.parse(localStorage.getItem("user"))

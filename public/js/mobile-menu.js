@@ -22,7 +22,8 @@ document.addEventListener("DOMContentLoaded", () => {
   
     // Toggle mobile menu
     if (mobileMenuToggle) {
-      mobileMenuToggle.addEventListener("click", () => {
+      mobileMenuToggle.addEventListener("click", (e) => {
+        e.stopPropagation() // Prevent event bubbling
         mobileMenu.classList.add("active")
         mobileMenuOverlay.classList.add("active")
         document.body.style.overflow = "hidden" // Prevent scrolling
@@ -37,11 +38,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   
     if (mobileMenuClose) {
-      mobileMenuClose.addEventListener("click", closeMobileMenu)
+      mobileMenuClose.addEventListener("click", (e) => {
+        e.stopPropagation() // Prevent event bubbling
+        closeMobileMenu()
+      })
     }
   
     if (mobileMenuOverlay) {
       mobileMenuOverlay.addEventListener("click", closeMobileMenu)
+    }
+  
+    // Prevent clicks inside the mobile menu from closing it
+    if (mobileMenu) {
+      mobileMenu.addEventListener("click", (e) => {
+        e.stopPropagation() // Prevent event bubbling
+      })
     }
   
     // Mobile logout functionality
