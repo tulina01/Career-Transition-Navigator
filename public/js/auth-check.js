@@ -1,62 +1,62 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const authButtons = document.getElementById("authButtons")
-  const userMenu = document.getElementById("userMenu")
-  const userName = document.getElementById("userName")
-  const logoutBtn = document.getElementById("logoutBtn")
-  const mobileMenu = document.getElementById("mobileMenu")
-
   // Check if user is logged in
   const user = JSON.parse(localStorage.getItem("user"))
+  const isLoggedIn = !!user
 
-  if (user) {
-    // User is logged in
-    if (authButtons) {
-      authButtons.classList.add("d-none")
-    }
-    if (userMenu) {
-      userMenu.classList.remove("d-none")
-    }
+  // Get auth-related elements
+  const authRequiredElements = document.querySelectorAll(".auth-required")
+  const authNotRequiredElements = document.querySelectorAll(".auth-not-required")
+  const logoutBtn = document.getElementById("logoutBtn")
 
-    // Set user name
-    if (userName) {
-      userName.textContent = user.name || user.email
-    }
+  // Update UI based on auth status
+  if (isLoggedIn) {
+    // Show elements that require authentication
+    authRequiredElements.forEach((el) => el.classList.remove("d-none"))
 
-    // Add logout functionality
-    if (logoutBtn) {
-      logoutBtn.addEventListener("click", async () => {
-        try {
-          await fetch("/api/auth/logout", {
-            method: "POST",
-            credentials: "include",
-          })
+    // Hide elements that should not be shown when authenticated
+    authNotRequiredElements.forEach((el) => el.classList.add("d-none"))
 
-          // Clear user from localStorage
-          localStorage.removeItem("user")
-
-          // Redirect to home page
-          window.location.href = "index.html"
-        } catch (error) {
-          console.error("Logout error:", error)
-
-          // If API call fails, still clear localStorage and redirect
-          localStorage.removeItem("user")
-          window.location.href = "index.html"
-        }
-      })
-    }
+    // Update any user-specific elements
+    const userNameElements = document.querySelectorAll(".user-name")
+    userNameElements.forEach((el) => {
+      el.textContent = user.name || user.email
+    })
   } else {
-    // User is not logged in
-    if (authButtons) {
-      authButtons.classList.remove("d-none")
-    }
-    if (userMenu) {
-      userMenu.classList.add("d-none")
-    }
+    // Hide elements that require authentication
+    authRequiredElements.forEach((el) => el.classList.add("d-none"))
+
+    // Show elements that should be visible when not authenticated
+    authNotRequiredElements.forEach((el) => el.classList.remove("d-none"))
+  }
+
+  // Add logout functionality
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async (e) => {
+      e.preventDefault()
+
+      try {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          credentials: "include",
+        })
+      } catch (error) {
+        console.error("Logout API error:", error)
+      }
+
+      // Always clear local storage and redirect, even if API call fails
+      localStorage.removeItem("user")
+      window.location.href = "index.html"
+    })
+  }
+
+  // Redirect to login if trying to access protected pages
+  const isProtectedPage = document.body.classList.contains("protected-page")
+  if (isProtectedPage && !isLoggedIn) {
+    window.location.href = "login.html?redirect=" + encodeURIComponent(window.location.pathname)
   }
 
   // Add save buttons to career path cards if user is logged in
-  if (user) {
+  if (isLoggedIn) {
     // Add event listener for when career paths are loaded
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {

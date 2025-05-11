@@ -1,9 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Profile elements
   const profileName = document.getElementById("profileName")
   const profileEmail = document.getElementById("profileEmail")
   const userInitials = document.getElementById("userInitials")
   const logoutBtn = document.getElementById("logoutBtn")
-  const toastContainer = document.getElementById("toastContainer")
+  const toastContainer = document.querySelector(".toast-container")
 
   // Resume list elements
   const resumesList = document.getElementById("resumesList")
@@ -20,51 +21,63 @@ document.addEventListener("DOMContentLoaded", () => {
   const transitionPlansLoading = document.getElementById("transitionPlansLoading")
   const noTransitionPlans = document.getElementById("noTransitionPlans")
 
+  // Settings form
+  const profileSettingsForm = document.getElementById("profileSettingsForm")
+  const settingsName = document.getElementById("settingsName")
+  const settingsEmail = document.getElementById("settingsEmail")
+
   // Check if user is logged in
   const user = JSON.parse(localStorage.getItem("user"))
 
   if (!user) {
     // Redirect to login page if not logged in
-    window.location.href = "login.html"
+    window.location.href = "login.html?redirect=profile.html"
     return
   }
 
   // Set user info
-  profileName.textContent = user.name || "User"
-  profileEmail.textContent = user.email
+  if (profileName) profileName.textContent = user.name || "User"
+  if (profileEmail) profileEmail.textContent = user.email
+  if (settingsName) settingsName.value = user.name || ""
+  if (settingsEmail) settingsEmail.value = user.email || ""
 
   // Set user initials
-  if (user.name) {
-    const nameParts = user.name.split(" ")
-    if (nameParts.length > 1) {
-      userInitials.textContent = `${nameParts[0][0]}${nameParts[1][0]}`
+  if (userInitials) {
+    if (user.name) {
+      const nameParts = user.name.split(" ")
+      if (nameParts.length > 1) {
+        userInitials.textContent = `${nameParts[0][0]}${nameParts[1][0]}`
+      } else {
+        userInitials.textContent = nameParts[0][0]
+      }
     } else {
-      userInitials.textContent = nameParts[0][0]
+      userInitials.textContent = user.email[0].toUpperCase()
     }
-  } else {
-    userInitials.textContent = user.email[0].toUpperCase()
   }
 
   // Add logout functionality
-  logoutBtn.addEventListener("click", async () => {
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      })
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          credentials: "include",
+        })
 
-      // Clear user from localStorage
-      localStorage.removeItem("user")
+        // Clear user from localStorage
+        localStorage.removeItem("user")
 
-      // Redirect to home page
-      window.location.href = "index.html"
-    } catch (error) {
-      console.error("Logout error:", error)
+        // Redirect to home page
+        window.location.href = "index.html"
+      } catch (error) {
+        console.error("Logout error:", error)
 
-      // If API call fails, still clear localStorage and redirect
-      localStorage.removeItem("user")
-      window.location.href = "index.html"
-    }
-  })
+        // If API call fails, still clear localStorage and redirect
+        localStorage.removeItem("user")
+        window.location.href = "index.html"
+      }
+    })
+  }
 
   // Show toast notification
   function showToast(type, title, message) {
@@ -125,13 +138,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json()
 
       // Display resumes
-      displayResumes(data.resumes)
+      if (resumesList) displayResumes(data.resumes)
 
       // Display career paths
-      displayCareerPaths(data.careerPaths)
+      if (careerPathsList) displayCareerPaths(data.careerPaths)
 
       // Display transition plans
-      displayTransitionPlans(data.transitionPlans)
+      if (transitionPlansList) displayTransitionPlans(data.transitionPlans)
     } catch (error) {
       console.error("Error loading profile data:", error)
       showToast("error", "Error", "Failed to load profile data. Please try again.")
@@ -140,10 +153,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Display resumes
   function displayResumes(resumes) {
-    resumesLoading.classList.add("d-none")
+    if (resumesLoading) resumesLoading.classList.add("d-none")
 
     if (!resumes || resumes.length === 0) {
-      noResumes.classList.remove("d-none")
+      if (noResumes) noResumes.classList.remove("d-none")
       return
     }
 
@@ -159,34 +172,34 @@ document.addEventListener("DOMContentLoaded", () => {
         const skillsCount = parsedData.skills?.length || 0
 
         return `
-            <div class="resume-item" data-id="${resume._id}">
-              <div class="d-flex justify-content-between align-items-start">
-                <div>
-                  <h5 class="mb-1">${resume.fileName}</h5>
-                  <p class="resume-date mb-2"><i class="bi bi-calendar3 me-1"></i>${formatDate(resume.uploadDate)}</p>
-                  <div>
-                    <span class="badge bg-light text-dark me-1">
-                      <i class="bi bi-briefcase me-1"></i>${jobCount} Jobs
-                    </span>
-                    <span class="badge bg-light text-dark me-1">
-                      <i class="bi bi-mortarboard me-1"></i>${educationCount} Education
-                    </span>
-                    <span class="badge bg-light text-dark">
-                      <i class="bi bi-tools me-1"></i>${skillsCount} Skills
-                    </span>
-                  </div>
-                </div>
-                <div class="resume-actions">
-                  <button class="btn btn-icon view-resume-btn" title="View Resume">
-                    <i class="bi bi-eye"></i>
-                  </button>
-                  <button class="btn btn-icon delete-resume-btn" title="Delete Resume">
-                    <i class="bi bi-trash"></i>
-                  </button>
+          <div class="resume-item" data-id="${resume._id}">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h5 class="mb-1">${resume.fileName}</h5>
+                <p class="resume-date mb-2"><i class="bi bi-calendar3 me-1"></i>${formatDate(resume.uploadDate)}</p>
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge bg-light text-dark">
+                    <i class="bi bi-briefcase me-1"></i>${jobCount} Jobs
+                  </span>
+                  <span class="badge bg-light text-dark">
+                    <i class="bi bi-mortarboard me-1"></i>${educationCount} Education
+                  </span>
+                  <span class="badge bg-light text-dark">
+                    <i class="bi bi-tools me-1"></i>${skillsCount} Skills
+                  </span>
                 </div>
               </div>
+              <div class="resume-actions">
+                <button class="btn btn-sm btn-primary view-resume-btn" title="View Resume">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger delete-resume-btn" title="Delete Resume">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
             </div>
-          `
+          </div>
+        `
       })
       .join("")
 

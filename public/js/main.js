@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Progress and loading elements
   const uploadProgress = document.getElementById("uploadProgress")
   const progressBarUpload = uploadProgress.querySelector(".progress-bar")
+  const uploadPercentage = document.getElementById("uploadPercentage")
   const loadingRecommendations = document.getElementById("loadingRecommendations")
   const careerPaths = document.getElementById("careerPaths")
   const loadingPlan = document.getElementById("loadingPlan")
@@ -36,54 +37,58 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadingMessages = document.querySelector(".loading-messages")
   const loadingPlanMessages = document.querySelector(".loading-plan-messages")
   const confettiContainer = document.getElementById("confettiContainer")
-  const toastContainer = document.getElementById("toastContainer")
+  const toastContainer = document.querySelector(".toast-container")
 
   // Store parsed resume data
   let resumeData = null
 
   // File upload styling
-  resumeFileInput.addEventListener("change", function () {
-    if (this.files.length > 0) {
-      fileNameDisplay.textContent = this.files[0].name
-      fileNameDisplay.classList.add("text-primary")
-      document.querySelector(".file-upload-icon").classList.add("text-primary")
-    } else {
-      fileNameDisplay.textContent = "Drag & drop your resume or click to browse"
-      fileNameDisplay.classList.remove("text-primary")
-      document.querySelector(".file-upload-icon").classList.remove("text-primary")
-    }
-  })
+  if (resumeFileInput) {
+    resumeFileInput.addEventListener("change", function () {
+      if (this.files.length > 0) {
+        fileNameDisplay.textContent = this.files[0].name
+        fileNameDisplay.classList.add("text-primary")
+        document.querySelector(".file-upload-icon").classList.add("text-primary")
+      } else {
+        fileNameDisplay.textContent = "Drag & drop your resume or click to browse"
+        fileNameDisplay.classList.remove("text-primary")
+        document.querySelector(".file-upload-icon").classList.remove("text-primary")
+      }
+    })
+  }
 
   // Drag and drop functionality
   const fileUploadLabel = document.querySelector(".file-upload-label")
 
-  fileUploadLabel.addEventListener("dragover", (e) => {
-    e.preventDefault()
-    fileUploadLabel.classList.add("dragover")
-  })
+  if (fileUploadLabel) {
+    fileUploadLabel.addEventListener("dragover", (e) => {
+      e.preventDefault()
+      fileUploadLabel.classList.add("dragover")
+    })
 
-  fileUploadLabel.addEventListener("dragleave", () => {
-    fileUploadLabel.classList.remove("dragover")
-  })
+    fileUploadLabel.addEventListener("dragleave", () => {
+      fileUploadLabel.classList.remove("dragover")
+    })
 
-  fileUploadLabel.addEventListener("drop", (e) => {
-    e.preventDefault()
-    fileUploadLabel.classList.remove("dragover")
+    fileUploadLabel.addEventListener("drop", (e) => {
+      e.preventDefault()
+      fileUploadLabel.classList.remove("dragover")
 
-    if (e.dataTransfer.files.length) {
-      resumeFileInput.files = e.dataTransfer.files
-      if (resumeFileInput.files.length > 0) {
-        fileNameDisplay.textContent = resumeFileInput.files[0].name
-        fileNameDisplay.classList.add("text-primary")
-        document.querySelector(".file-upload-icon").classList.add("text-primary")
+      if (e.dataTransfer.files.length) {
+        resumeFileInput.files = e.dataTransfer.files
+        if (resumeFileInput.files.length > 0) {
+          fileNameDisplay.textContent = resumeFileInput.files[0].name
+          fileNameDisplay.classList.add("text-primary")
+          document.querySelector(".file-upload-icon").classList.add("text-primary")
+        }
       }
-    }
-  })
+    })
+  }
 
   // Navigation between steps
   function goToStep(stepNumber) {
     // Hide all steps
-    document.querySelectorAll(".step-container").forEach((container) => {
+    document.querySelectorAll(".step-content").forEach((container) => {
       container.classList.remove("active")
       container.classList.add("d-none")
     })
@@ -98,13 +103,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 50)
 
     // Update progress tracker
-    progressSteps.forEach((step) => {
-      step.classList.remove("active")
+    progressSteps.forEach((step, index) => {
+      if (index < stepNumber) {
+        step.classList.add("active")
+      } else {
+        step.classList.remove("active")
+      }
     })
-
-    for (let i = 0; i < stepNumber; i++) {
-      progressSteps[i].classList.add("active")
-    }
 
     // Update progress bar
     progressBar.style.width = `${stepNumber * 25}%`
@@ -112,13 +117,23 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Back button handlers
-  backToStep1.addEventListener("click", () => {
-    goToStep(1)
-  })
+  if (backToStep1) {
+    backToStep1.addEventListener("click", () => {
+      goToStep(1)
+    })
+  }
 
-  backToStep2.addEventListener("click", () => {
-    goToStep(2)
-  })
+  if (backToStep2) {
+    backToStep2.addEventListener("click", () => {
+      goToStep(2)
+    })
+  }
+
+  if (backToPathsBtn) {
+    backToPathsBtn.addEventListener("click", () => {
+      goToStep(3)
+    })
+  }
 
   // Show toast notification
   function showToast(type, title, message) {
@@ -155,6 +170,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Create confetti effect
   function createConfetti() {
+    if (!confettiContainer) return
+
     confettiContainer.innerHTML = ""
     const colors = ["#4361ee", "#4cc9f0", "#f72585", "#4ade80", "#fbbf24"]
 
@@ -179,6 +196,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Loading messages animation
   function animateLoadingMessages(container, messages) {
+    if (!container) return null
+
     let index = 0
     container.innerHTML = `<p class="loading-message">${messages[0]}</p>`
 
@@ -201,162 +220,170 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Handle resume upload
-  resumeForm.addEventListener("submit", (e) => {
-    e.preventDefault()
+  if (resumeForm) {
+    resumeForm.addEventListener("submit", (e) => {
+      e.preventDefault()
 
-    const formData = new FormData(resumeForm)
-    const fileInput = document.getElementById("resumeFile")
+      const formData = new FormData(resumeForm)
+      const fileInput = document.getElementById("resumeFile")
 
-    if (!fileInput.files.length) {
-      showToast("error", "Error", "Please select a file to upload")
-      return
-    }
-
-    // Show progress bar
-    uploadProgress.classList.remove("d-none")
-
-    // Loading messages
-    const uploadMessages = [
-      "Uploading your resume...",
-      "Extracting information...",
-      "Analyzing your experience...",
-      "Identifying key skills...",
-      "Almost there...",
-    ]
-
-    const messageInterval = animateLoadingMessages(
-      document.createElement("div"), // Dummy element since we're using progress bar
-      uploadMessages,
-    )
-
-    // Simulate upload progress (in a real app, this would be actual upload progress)
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += 5
-      progressBarUpload.style.width = `${progress}%`
-
-      if (progress >= 100) {
-        clearInterval(interval)
-        clearInterval(messageInterval)
-
-        // Send the file to the server
-        fetch("/api/parse-resume", {
-          method: "POST",
-          body: formData,
-        })
-          .then((response) => {
-            if (!response.ok) {
-              return response.json().then((data) => {
-                throw new Error(data.error || data.details || "Network response was not ok")
-              })
-            }
-            return response.json()
-          })
-          .then((data) => {
-            console.log("Parsed resume data:", data)
-            resumeData = data
-
-            // Show success toast
-            showToast("success", "Success", "Resume uploaded and parsed successfully!")
-
-            // Move to step 2
-            goToStep(2)
-          })
-          .catch((error) => {
-            console.error("Error parsing resume:", error)
-            showToast("error", "Error", `Error parsing resume: ${error.message}. Please try again.`)
-            uploadProgress.classList.add("d-none")
-            progressBarUpload.style.width = "0%"
-          })
+      if (!fileInput.files.length) {
+        showToast("error", "Error", "Please select a file to upload")
+        return
       }
-    }, 100)
-  })
+
+      // Show progress bar
+      uploadProgress.classList.remove("d-none")
+
+      // Loading messages
+      const uploadMessages = [
+        "Uploading your resume...",
+        "Extracting information...",
+        "Analyzing your experience...",
+        "Identifying key skills...",
+        "Almost there...",
+      ]
+
+      const messageInterval = animateLoadingMessages(
+        document.createElement("div"), // Dummy element since we're using progress bar
+        uploadMessages,
+      )
+
+      // Simulate upload progress (in a real app, this would be actual upload progress)
+      let progress = 0
+      const interval = setInterval(() => {
+        progress += 5
+        progressBarUpload.style.width = `${progress}%`
+        uploadPercentage.textContent = `${progress}%`
+
+        if (progress >= 100) {
+          clearInterval(interval)
+          clearInterval(messageInterval)
+
+          // Send the file to the server
+          fetch("/api/parse-resume", {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => {
+              if (!response.ok) {
+                return response.json().then((data) => {
+                  throw new Error(data.error || data.details || "Network response was not ok")
+                })
+              }
+              return response.json()
+            })
+            .then((data) => {
+              console.log("Parsed resume data:", data)
+              resumeData = data
+
+              // Show success toast
+              showToast("success", "Success", "Resume uploaded and parsed successfully!")
+
+              // Move to step 2
+              goToStep(2)
+            })
+            .catch((error) => {
+              console.error("Error parsing resume:", error)
+              showToast("error", "Error", `Error parsing resume: ${error.message}. Please try again.`)
+              uploadProgress.classList.add("d-none")
+              progressBarUpload.style.width = "0%"
+              uploadPercentage.textContent = "0%"
+            })
+        }
+      }, 100)
+    })
+  }
 
   // Toggle "Other" reason text field
-  reasonOther.addEventListener("change", function () {
-    if (this.checked) {
-      otherReasonContainer.classList.remove("d-none")
-    } else {
-      otherReasonContainer.classList.add("d-none")
-    }
-  })
+  if (reasonOther) {
+    reasonOther.addEventListener("change", function () {
+      if (this.checked) {
+        otherReasonContainer.classList.remove("d-none")
+      } else {
+        otherReasonContainer.classList.add("d-none")
+      }
+    })
+  }
 
   // Handle reasons form submission
-  reasonsForm.addEventListener("submit", (e) => {
-    e.preventDefault()
+  if (reasonsForm) {
+    reasonsForm.addEventListener("submit", (e) => {
+      e.preventDefault()
 
-    // Get selected reasons
-    const selectedReasons = Array.from(document.querySelectorAll('input[name="reasons"]:checked')).map((checkbox) => {
-      if (checkbox.id === "reasonOther") {
-        return document.getElementById("otherReason").value
-      }
-      return checkbox.value
-    })
-
-    if (selectedReasons.length === 0) {
-      showToast("warning", "Warning", "Please select at least one reason for career change")
-      return
-    }
-
-    // Move to step 3
-    goToStep(3)
-
-    // Show loading messages
-    const recommendationMessages = [
-      "Evaluating your skills and experience...",
-      "Matching with potential career paths...",
-      "Calculating compatibility scores...",
-      "Finalizing recommendations...",
-      "Almost ready...",
-    ]
-
-    const messageInterval = animateLoadingMessages(loadingMessages, recommendationMessages)
-
-    // Request career recommendations
-    fetch("/api/career-recommendations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        resumeData,
-        reasons: selectedReasons,
-      }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok")
+      // Get selected reasons
+      const selectedReasons = Array.from(document.querySelectorAll('input[name="reasons"]:checked')).map((checkbox) => {
+        if (checkbox.id === "reasonOther") {
+          return document.getElementById("otherReason").value
         }
-        return response.json()
+        return checkbox.value
       })
-      .then((data) => {
-        clearInterval(messageInterval)
-        console.log("Career recommendations response:", data)
 
-        // Hide loading, show career paths
-        loadingRecommendations.classList.add("d-none")
-        careerPaths.classList.remove("d-none")
+      if (selectedReasons.length === 0) {
+        showToast("warning", "Warning", "Please select at least one reason for career change")
+        return
+      }
 
-        // Display career paths
-        displayCareerPaths(data)
+      // Move to step 3
+      goToStep(3)
 
-        // Show success toast
-        showToast("success", "Success", "Career recommendations generated successfully!")
+      // Show loading messages
+      const recommendationMessages = [
+        "Evaluating your skills and experience...",
+        "Matching with potential career paths...",
+        "Calculating compatibility scores...",
+        "Finalizing recommendations...",
+        "Almost ready...",
+      ]
+
+      const messageInterval = animateLoadingMessages(loadingMessages, recommendationMessages)
+
+      // Request career recommendations
+      fetch("/api/career-recommendations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          resumeData,
+          reasons: selectedReasons,
+        }),
       })
-      .catch((error) => {
-        clearInterval(messageInterval)
-        console.error("Error getting career recommendations:", error)
-        loadingRecommendations.innerHTML = `
-    <div class="alert alert-danger">
-      <i class="bi bi-exclamation-triangle-fill me-2"></i>
-      Error getting career recommendations. Please try again.
-    </div>
-    <button class="btn btn-primary mt-3" onclick="location.reload()">
-      <i class="bi bi-arrow-clockwise me-2"></i>Start Over
-    </button>
-  `
-      })
-  })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Network response was not ok")
+          }
+          return response.json()
+        })
+        .then((data) => {
+          clearInterval(messageInterval)
+          console.log("Career recommendations response:", data)
+
+          // Hide loading, show career paths
+          loadingRecommendations.classList.add("d-none")
+          careerPaths.classList.remove("d-none")
+
+          // Display career paths
+          displayCareerPaths(data)
+
+          // Show success toast
+          showToast("success", "Success", "Career recommendations generated successfully!")
+        })
+        .catch((error) => {
+          clearInterval(messageInterval)
+          console.error("Error getting career recommendations:", error)
+          loadingRecommendations.innerHTML = `
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              Error getting career recommendations. Please try again.
+            </div>
+            <button class="btn btn-primary mt-3" onclick="location.reload()">
+              <i class="bi bi-arrow-clockwise me-2"></i>Start Over
+            </button>
+          `
+        })
+    })
+  }
 
   // Display career paths
   function displayCareerPaths(data) {
@@ -370,6 +397,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const sameFieldContainer = document.querySelector(".same-field-careers")
     const differentFieldContainer = document.querySelector(".different-field-careers")
+
+    if (!sameFieldContainer || !differentFieldContainer) return
 
     // Clear containers
     sameFieldContainer.innerHTML = ""
@@ -393,36 +422,45 @@ document.addEventListener("DOMContentLoaded", () => {
       const pathsHTML = sameFieldCareers
         .map(
           (path) => `
-        <div class="card career-path-card mb-3" data-career="${encodeURIComponent(path.Title || path.title || "")}">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <h3 class="card-title">
-                ${path.Title || path.title || "Career Path"}
-                <span class="career-type-badge badge-same-field">Same Field</span>
-              </h3>
-              <span class="badge bg-primary">${path["Fit Score"] || path.fitScore || 0}% Match</span>
-            </div>
-            <p class="card-text">${path.Description || path.description || "No description available."}</p>
-            ${
-              path["Key transferable skills"] || path.transferableSkills
-                ? `
-            <div class="transferable-skills">
-              <h6><i class="bi bi-arrow-right-circle me-1"></i>Transferable Skills</h6>
-              <div>
-                ${(path["Key transferable skills"] || path.transferableSkills || []).map((skill) => `<span class="skill-tag">${skill}</span>`).join("")}
+            <div class="card career-path-card" data-career="${encodeURIComponent(path.title || path.Title || "")}">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h5 class="card-title">
+                    ${path.title || path.Title || "Career Path"}
+                    <span class="career-type-badge badge-same-field">Same Field</span>
+                  </h5>
+                  <span class="badge bg-primary">${path.fitScore || path["Fit Score"] || 0}% Match</span>
+                </div>
+                <p class="card-text">${path.description || path.Description || "No description available."}</p>
+                ${
+                  path.transferableSkills || path["Key transferable skills"]
+                    ? `
+                    <div class="transferable-skills">
+                      <h6><i class="bi bi-arrow-right-circle me-1"></i>Transferable Skills</h6>
+                      <div>
+                        ${(path.transferableSkills || path["Key transferable skills"] || [])
+                          .map((skill) => `<span class="skill-tag">${skill}</span>`)
+                          .join("")}
+                      </div>
+                    </div>
+                  `
+                    : ""
+                }
+                <div class="d-flex justify-content-end mt-3">
+                  <button class="btn btn-primary btn-sm view-plan-btn">
+                    <i class="bi bi-signpost-split me-1"></i>View Transition Plan
+                  </button>
+                </div>
               </div>
+              ${
+                isLoggedIn
+                  ? `<button class="btn btn-sm btn-outline-primary save-btn" title="Save to profile">
+                      <i class="bi bi-bookmark"></i>
+                    </button>`
+                  : ""
+              }
             </div>
-          `
-                : ""
-            }
-          <div class="d-flex justify-content-end mt-3">
-            <button class="btn btn-outline-primary btn-sm view-plan-btn">
-              <i class="bi bi-signpost-split me-1"></i>View Transition Plan
-            </button>
-          </div>
-        </div>
-      </div>
-    `,
+          `,
         )
         .join("")
 
@@ -441,36 +479,45 @@ document.addEventListener("DOMContentLoaded", () => {
       const pathsHTML = differentFieldCareers
         .map(
           (path) => `
-        <div class="card career-path-card mb-3" data-career="${encodeURIComponent(path.Title || path.title || "")}">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <h3 class="card-title">
-                ${path.Title || path.title || "Career Path"}
-                <span class="career-type-badge badge-different-field">Different Field</span>
-              </h3>
-              <span class="badge bg-primary">${path["Fit Score"] || path.fitScore || 0}% Match</span>
-            </div>
-            <p class="card-text">${path.Description || path.description || "No description available."}</p>
-            ${
-              path["Key transferable skills"] || path.transferableSkills
-                ? `
-            <div class="transferable-skills">
-              <h6><i class="bi bi-arrow-right-circle me-1"></i>Transferable Skills</h6>
-              <div>
-                ${(path["Key transferable skills"] || path.transferableSkills || []).map((skill) => `<span class="skill-tag">${skill}</span>`).join("")}
+            <div class="card career-path-card" data-career="${encodeURIComponent(path.title || path.Title || "")}">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h5 class="card-title">
+                    ${path.title || path.Title || "Career Path"}
+                    <span class="career-type-badge badge-different-field">Different Field</span>
+                  </h5>
+                  <span class="badge bg-primary">${path.fitScore || path["Fit Score"] || 0}% Match</span>
+                </div>
+                <p class="card-text">${path.description || path.Description || "No description available."}</p>
+                ${
+                  path.transferableSkills || path["Key transferable skills"]
+                    ? `
+                    <div class="transferable-skills">
+                      <h6><i class="bi bi-arrow-right-circle me-1"></i>Transferable Skills</h6>
+                      <div>
+                        ${(path.transferableSkills || path["Key transferable skills"] || [])
+                          .map((skill) => `<span class="skill-tag">${skill}</span>`)
+                          .join("")}
+                      </div>
+                    </div>
+                  `
+                    : ""
+                }
+                <div class="d-flex justify-content-end mt-3">
+                  <button class="btn btn-primary btn-sm view-plan-btn">
+                    <i class="bi bi-signpost-split me-1"></i>View Transition Plan
+                  </button>
+                </div>
               </div>
+              ${
+                isLoggedIn
+                  ? `<button class="btn btn-sm btn-outline-primary save-btn" title="Save to profile">
+                      <i class="bi bi-bookmark"></i>
+                    </button>`
+                  : ""
+              }
             </div>
-          `
-                : ""
-            }
-          <div class="d-flex justify-content-end mt-3">
-            <button class="btn btn-outline-primary btn-sm view-plan-btn">
-              <i class="bi bi-signpost-split me-1"></i>View Transition Plan
-            </button>
-          </div>
-        </div>
-      </div>
-    `,
+          `,
         )
         .join("")
 
@@ -500,10 +547,92 @@ document.addEventListener("DOMContentLoaded", () => {
         getTransitionPlan(careerTitle)
       })
     })
+
+    // Add save button functionality
+    document.querySelectorAll(".save-btn").forEach((btn) => {
+      btn.addEventListener("click", async function (e) {
+        e.stopPropagation() // Prevent card click
+
+        try {
+          // Show loading state
+          this.disabled = true
+          this.innerHTML = '<i class="bi bi-hourglass-split"></i>'
+
+          // Get career path data
+          const card = this.closest(".career-path-card")
+          const careerTitle = decodeURIComponent(card.dataset.career || "")
+          const description = card.querySelector(".card-text").textContent || ""
+
+          // Get fit score with fallback
+          let fitScore = 0
+          const fitScoreElement = card.querySelector(".badge")
+          if (fitScoreElement) {
+            const fitScoreText = fitScoreElement.textContent || ""
+            const match = fitScoreText.match(/(\d+)/)
+            fitScore = match ? Number.parseInt(match[1], 10) : 0
+          }
+
+          // Get type with fallback
+          let type = "same-field"
+          const typeElement = card.querySelector(".career-type-badge")
+          if (typeElement) {
+            type = (typeElement.textContent || "").trim().toLowerCase().includes("same")
+              ? "same-field"
+              : "different-field"
+          }
+
+          // Get skill tags with fallback
+          const skillElements = card.querySelectorAll(".skill-tag")
+          const skillTags = skillElements ? Array.from(skillElements).map((tag) => tag.textContent || "") : []
+
+          const response = await fetch("/api/profile/career-paths", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              careerPath: {
+                title: careerTitle,
+                description,
+                fitScore,
+                type,
+                transferableSkills: skillTags,
+              },
+            }),
+            credentials: "include", // Important: include cookies
+          })
+
+          if (!response.ok) {
+            throw new Error("Failed to save career path")
+          }
+
+          // Change button to saved state
+          this.disabled = false
+          this.innerHTML = '<i class="bi bi-bookmark-check-fill"></i>'
+          this.classList.remove("btn-outline-primary")
+          this.classList.add("btn-success")
+          this.title = "Saved to profile"
+
+          // Show toast notification
+          showToast("success", "Success", "Career path saved to your profile!")
+        } catch (error) {
+          console.error("Error saving career path:", error)
+
+          // Reset button state
+          this.disabled = false
+          this.innerHTML = '<i class="bi bi-bookmark"></i>'
+
+          // Show error toast
+          showToast("error", "Error", "Failed to save career path. Please try again.")
+        }
+      })
+    })
   }
 
   // Get transition plan for selected career
   function getTransitionPlan(careerTitle) {
+    if (!step4 || !loadingPlan || !transitionPlan || !selectedCareerTitle) return
+
     // Move to step 4
     goToStep(4)
 
@@ -543,48 +672,50 @@ document.addEventListener("DOMContentLoaded", () => {
         return response.json()
       })
       .then((data) => {
-        clearInterval(messageInterval)
+        if (messageInterval) clearInterval(messageInterval)
 
         // Hide loading, show plan
         loadingPlan.classList.add("d-none")
         transitionPlan.classList.remove("d-none")
 
         // Display transition plan
-        displayTransitionPlan(data.plan)
+        displayTransitionPlan(data.plan, careerTitle)
 
         // Show success toast and confetti
         showToast("success", "Success", "Your personalized transition plan is ready!")
         createConfetti()
       })
       .catch((error) => {
-        clearInterval(messageInterval)
+        if (messageInterval) clearInterval(messageInterval)
         console.error("Error getting transition plan:", error)
         loadingPlan.innerHTML = `
-        <div class="alert alert-danger">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          Error getting transition plan. Please try again.
-        </div>
-        <button class="btn btn-primary mt-3" onclick="location.reload()">
-          <i class="bi bi-arrow-clockwise me-2"></i>Start Over
-        </button>
-      `
+          <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Error getting transition plan. Please try again.
+          </div>
+          <button class="btn btn-primary mt-3" onclick="location.reload()">
+            <i class="bi bi-arrow-clockwise me-2"></i>Start Over
+          </button>
+        `
       })
   }
 
   // Display transition plan
-  function displayTransitionPlan(plan) {
+  function displayTransitionPlan(plan, careerTitle) {
     console.log("Received transition plan:", plan)
+
+    if (!transitionPlan) return
 
     if (!plan || !plan.steps || plan.steps.length === 0) {
       transitionPlan.innerHTML = `
-    <div class="alert alert-info">
-      <i class="bi bi-info-circle-fill me-2"></i>
-      No transition plan available. Please try a different career path.
-    </div>
-    <button class="btn btn-primary" id="tryDifferentPath">
-      <i class="bi bi-arrow-left me-2"></i>Try Different Path
-    </button>
-  `
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          No transition plan available. Please try a different career path.
+        </div>
+        <button class="btn btn-primary" id="tryDifferentPath">
+          <i class="bi bi-arrow-left me-2"></i>Try Different Path
+        </button>
+      `
 
       document.getElementById("tryDifferentPath").addEventListener("click", () => {
         goToStep(3)
@@ -601,156 +732,81 @@ document.addEventListener("DOMContentLoaded", () => {
     const stepsHTML = plan.steps
       .map(
         (step, index) => `
-<div class="transition-step">
-  <h4>${index + 1}. ${step.title}</h4>
-  <p>${step.description}</p>
-  ${
-    step.resources && Array.isArray(step.resources) && step.resources.length > 0
-      ? `
-    <div class="resources">
-      <strong><i class="bi bi-link-45deg me-1"></i>Resources:</strong>
-      <ul>
-        ${step.resources
-          .map(
-            (resource) => `
-          <li><a href="${resource.url}" target="_blank">${resource.title || resource.name || "Resource"} <i class="bi bi-box-arrow-up-right ms-1"></i></a></li>
+          <div class="transition-step">
+            <h4>${index + 1}. ${step.title}</h4>
+            <p>${step.description}</p>
+            ${
+              step.resources && Array.isArray(step.resources) && step.resources.length > 0
+                ? `
+                <div class="resources">
+                  <strong><i class="bi bi-link-45deg me-1"></i>Resources:</strong>
+                  <ul>
+                    ${step.resources
+                      .map(
+                        (resource) => `
+                      <li><a href="${resource.url}" target="_blank">${resource.title || resource.name || "Resource"} <i class="bi bi-box-arrow-up-right ms-1"></i></a></li>
+                    `,
+                      )
+                      .join("")}
+                  </ul>
+                </div>
+              `
+                : ""
+            }
+          </div>
         `,
-          )
-          .join("")}
-      </ul>
-    </div>
-  `
-      : ""
-  }
-</div>
-`,
       )
       .join("")
 
     transitionPlan.innerHTML = `
-<div class="plan-overview mb-4 p-3 rounded" style="background-color: rgba(67, 97, 238, 0.05);">
-  <div class="d-flex justify-content-between align-items-start mb-2">
-    <h5><i class="bi bi-info-circle me-2"></i>Overview</h5>
-    <span class="career-type-badge ${transitionTypeClass}">
-      <i class="bi bi-${transitionTypeIcon} me-1"></i>${transitionTypeText}
-    </span>
-  </div>
-  <p>${plan.overview}</p>
-</div>
-<div class="transition-timeline">
-  ${stepsHTML}
-</div>
-<div class="mt-4 d-flex justify-content-center gap-3">
-  <button class="btn btn-primary" onclick="window.print()">
-    <i class="bi bi-printer me-2"></i>Print Plan
-  </button>
-  <button class="btn btn-outline-primary" id="saveAsPdf">
-    <i class="bi bi-file-earmark-pdf me-2"></i>Save as PDF
-  </button>
-  <button class="btn btn-outline-primary" id="shareBtn">
-    <i class="bi bi-share me-2"></i>Share
-  </button>
-</div>
-`
+      <div class="plan-overview mb-4 p-3 rounded" style="background-color: rgba(67, 97, 238, 0.05);">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h5><i class="bi bi-info-circle me-2"></i>Overview</h5>
+          <span class="career-type-badge ${transitionTypeClass}">
+            <i class="bi bi-${transitionTypeIcon} me-1"></i>${transitionTypeText}
+          </span>
+        </div>
+        <p>${plan.overview}</p>
+      </div>
+      <div class="transition-timeline">
+        ${stepsHTML}
+      </div>
+      <div class="mt-4 d-flex flex-wrap justify-content-center gap-3">
+        <button class="btn btn-primary" onclick="window.print()">
+          <i class="bi bi-printer me-2"></i>Print Plan
+        </button>
+        ${
+          isLoggedIn
+            ? `<button class="btn btn-outline-primary" id="savePlanBtn">
+                <i class="bi bi-bookmark me-2"></i>Save Plan
+              </button>`
+            : `<a href="login.html" class="btn btn-outline-primary">
+                <i class="bi bi-person me-2"></i>Login to Save
+              </a>`
+        }
+        <button class="btn btn-outline-secondary" id="shareBtn">
+          <i class="bi bi-share me-2"></i>Share
+        </button>
+      </div>
+    `
 
     // Add event listeners for buttons
-    document.getElementById("saveAsPdf").addEventListener("click", () => {
-      showToast("info", "Info", "PDF download functionality would be implemented here.")
-    })
-
     document.getElementById("shareBtn").addEventListener("click", () => {
       showToast("info", "Info", "Share functionality would be implemented here.")
     })
-  }
 
-  // Add save functionality to career paths and transition plans
-  function addSaveButtonsToCareerPaths() {
-    if (isLoggedIn) {
-      document.querySelectorAll(".career-path-card").forEach((card) => {
-        // Check if save button already exists
-        if (!card.querySelector(".save-btn")) {
-          const saveBtn = document.createElement("button")
-          saveBtn.className = "btn btn-sm btn-outline-primary save-btn"
-          saveBtn.innerHTML = '<i class="bi bi-bookmark"></i>'
-          saveBtn.title = "Save to profile"
-
-          saveBtn.addEventListener("click", async (e) => {
-            e.stopPropagation() // Prevent card click
-
-            const careerTitle = decodeURIComponent(card.dataset.career)
-            const description = card.querySelector(".card-text").textContent
-            const fitScore = Number.parseInt(card.querySelector(".badge").textContent)
-            const type = card.querySelector(".career-type-badge").textContent.trim().toLowerCase().includes("same")
-              ? "same-field"
-              : "different-field"
-
-            const skillTags = Array.from(card.querySelectorAll(".skill-tag")).map((tag) => tag.textContent)
-
-            try {
-              const response = await fetch("/api/profile/career-paths", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  careerPath: {
-                    title: careerTitle,
-                    description,
-                    fitScore,
-                    type,
-                    transferableSkills: skillTags,
-                  },
-                }),
-              })
-
-              if (!response.ok) {
-                throw new Error("Failed to save career path")
-              }
-
-              // Change button to saved state
-              saveBtn.innerHTML = '<i class="bi bi-bookmark-check-fill"></i>'
-              saveBtn.classList.remove("btn-outline-primary")
-              saveBtn.classList.add("btn-success")
-              saveBtn.title = "Saved to profile"
-
-              // Show toast notification
-              showToast("success", "Success", "Career path saved to your profile!")
-            } catch (error) {
-              console.error("Error saving career path:", error)
-              showToast("error", "Error", "Failed to save career path. Please try again.")
-            }
-          })
-
-          card.appendChild(saveBtn)
-        }
-      })
-    }
-  }
-
-  // Add save functionality to transition plan
-  function addSaveButtonToTransitionPlan() {
-    if (isLoggedIn && document.getElementById("transitionPlan") && !document.getElementById("savePlanBtn")) {
-      const transitionPlan = document.getElementById("transitionPlan")
-      const planOverview = transitionPlan.querySelector(".plan-overview")
-
-      if (planOverview) {
-        const saveBtn = document.createElement("button")
-        saveBtn.id = "savePlanBtn"
-        saveBtn.className = "btn btn-outline-primary btn-sm"
-        saveBtn.innerHTML = '<i class="bi bi-bookmark me-1"></i>Save Plan'
-
-        saveBtn.addEventListener("click", async () => {
+    // Add save plan functionality
+    const savePlanBtn = document.getElementById("savePlanBtn")
+    if (savePlanBtn) {
+      savePlanBtn.addEventListener("click", async () => {
+        try {
           // Disable the button to prevent multiple clicks
-          saveBtn.disabled = true
-          saveBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Saving...'
-
-          const careerTitle = document
-            .getElementById("selectedCareerTitle")
-            .textContent.replace("Transition Plan: ", "")
+          savePlanBtn.disabled = true
+          savePlanBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Saving...'
 
           // Extract plan data
-          const overview = planOverview.querySelector("p").textContent
-          const transitionType = planOverview
+          const overview = transitionPlan.querySelector(".plan-overview p").textContent
+          const transitionType = transitionPlan
             .querySelector(".career-type-badge")
             .textContent.trim()
             .toLowerCase()
@@ -776,86 +832,48 @@ document.addEventListener("DOMContentLoaded", () => {
             return { title, description, resources }
           })
 
-          const plan = {
+          const planData = {
             overview,
             transitionType,
             steps,
           }
 
-          try {
-            const response = await fetch("/api/profile/transition-plans", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                careerTitle,
-                plan,
-              }),
-            })
+          const response = await fetch("/api/profile/transition-plans", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              careerTitle,
+              plan: planData,
+            }),
+            credentials: "include",
+          })
 
-            if (!response.ok) {
-              throw new Error("Failed to save transition plan")
-            }
-
-            // Change button to saved state
-            saveBtn.innerHTML = '<i class="bi bi-bookmark-check-fill me-1"></i>Saved'
-            saveBtn.classList.remove("btn-outline-primary")
-            saveBtn.classList.add("btn-success")
-            saveBtn.disabled = true // Keep button disabled after saving
-
-            // Show toast notification
-            showToast("success", "Success", "Transition plan saved to your profile!")
-          } catch (error) {
-            console.error("Error saving transition plan:", error)
-
-            // Re-enable the button if there's an error
-            saveBtn.disabled = false
-            saveBtn.innerHTML = '<i class="bi bi-bookmark me-1"></i>Save Plan'
-
-            showToast("error", "Error", "Failed to save transition plan. Please try again.")
+          if (!response.ok) {
+            throw new Error("Failed to save transition plan")
           }
-        })
 
-        // Add the save button to the actions div
-        const actionsDiv = transitionPlan.querySelector(".mt-4.d-flex")
-        if (actionsDiv) {
-          actionsDiv.prepend(saveBtn)
+          // Change button to saved state
+          savePlanBtn.innerHTML = '<i class="bi bi-bookmark-check-fill me-2"></i>Saved'
+          savePlanBtn.classList.remove("btn-outline-primary")
+          savePlanBtn.classList.add("btn-success")
+          savePlanBtn.disabled = true // Keep button disabled after saving
+
+          // Show toast notification
+          showToast("success", "Success", "Transition plan saved to your profile!")
+        } catch (error) {
+          console.error("Error saving transition plan:", error)
+
+          // Re-enable the button if there's an error
+          savePlanBtn.disabled = false
+          savePlanBtn.innerHTML = '<i class="bi bi-bookmark me-2"></i>Save Plan'
+
+          showToast("error", "Error", "Failed to save transition plan. Please try again.")
         }
-      }
+      })
     }
   }
-
-  // Modify the displayCareerPaths function to add save buttons
-  const originalDisplayCareerPaths = displayCareerPaths
-  displayCareerPaths = (data) => {
-    originalDisplayCareerPaths(data)
-
-    // Add save buttons after career paths are displayed
-    if (isLoggedIn) {
-      setTimeout(() => {
-        addSaveButtonsToCareerPaths()
-      }, 100)
-    }
-  }
-
-  // Modify the displayTransitionPlan function to add save button
-  const originalDisplayTransitionPlan = displayTransitionPlan
-  displayTransitionPlan = (plan) => {
-    originalDisplayTransitionPlan(plan)
-
-    // Add save button after transition plan is displayed
-    if (isLoggedIn) {
-      setTimeout(() => {
-        addSaveButtonToTransitionPlan()
-      }, 100)
-    }
-  }
-
-  // Back to career paths button
-  backToPathsBtn.addEventListener("click", () => {
-    goToStep(3)
-  })
 
   // Initialize the file upload styling
   const fileUploadContainer = document.createElement("style")
