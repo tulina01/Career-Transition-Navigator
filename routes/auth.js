@@ -113,4 +113,82 @@ router.get("/me", async (req, res) => {
   }
 })
 
+// Change password
+router.post("/change-password", async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Not authenticated" })
+    }
+
+    const { currentPassword, newPassword } = req.body
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "All fields are required" })
+    }
+
+    // Validate new password length
+    if (newPassword.length < 6) {
+      console.log(`Password change request: length=${newPassword.length}, meets requirement=${newPassword.length >= 6}`)
+      return res.status(400).json({ error: "New password must be at least 6 characters long" })
+    }
+
+    // Get user from database
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" })
+    }
+
+    // Verify current password
+    const isMatch = await user.comparePassword(currentPassword)
+
+    if (!isMatch) {
+      return res.status(401).json({ error: "Current password is incorrect" })
+    }
+
+    // Update password
+    user.password = newPassword
+    await user.save()
+
+    res.json({ message: "Password updated successfully" })
+  } catch (error) {
+    console.error("Change password error:", error)
+    res.status(500).json({ error: "Server error" })
+  }
+})
+
+// Update user profile
+router.put("/profile", async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Not authenticated" })
+    }
+
+    const { name } = req.body
+
+    // Get user from database
+    const user = await User.findById(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" })
+    }
+
+    // Update fields
+    if (name) user.name = name
+
+    await user.save()
+
+    // Update user in localStorage
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+    })
+  } catch (error) {
+    console.error("Update profile error:", error)
+    res.status(500).json({ error: "Server error" })
+  }
+})
+
 module.exports = router

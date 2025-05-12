@@ -26,6 +26,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const settingsName = document.getElementById("settingsName")
   const settingsEmail = document.getElementById("settingsEmail")
 
+  // Password change form
+  const passwordChangeForm = document.getElementById("passwordChangeForm")
+  const currentPassword = document.getElementById("currentPassword")
+  const newPassword = document.getElementById("newPassword")
+  const confirmNewPassword = document.getElementById("confirmNewPassword")
+  const passwordFeedback = document.getElementById("passwordFeedback")
+
   // Check if user is logged in
   const user = JSON.parse(localStorage.getItem("user"))
 
@@ -77,6 +84,176 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = "index.html"
       }
     })
+  }
+
+  // Handle profile settings form submission
+  if (profileSettingsForm) {
+    profileSettingsForm.addEventListener("submit", async (e) => {
+      e.preventDefault()
+
+      const nameValue = settingsName.value.trim()
+
+      try {
+        const response = await fetch("/api/auth/profile", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            name: nameValue,
+          }),
+        })
+
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.error || "Failed to update profile")
+        }
+
+        const updatedUser = await response.json()
+
+        // Update user in localStorage
+        localStorage.setItem("user", JSON.stringify(updatedUser))
+
+        // Update displayed name
+        if (profileName) profileName.textContent = updatedUser.name || "User"
+
+        // Update initials
+        if (userInitials) {
+          if (updatedUser.name) {
+            const nameParts = updatedUser.name.split(" ")
+            if (nameParts.length > 1) {
+              userInitials.textContent = `${nameParts[0][0]}${nameParts[1][0]}`
+            } else {
+              userInitials.textContent = nameParts[0][0]
+            }
+          } else {
+            userInitials.textContent = updatedUser.email[0].toUpperCase()
+          }
+        }
+
+        showToast("success", "Success", "Profile updated successfully")
+      } catch (error) {
+        console.error("Update profile error:", error)
+        showToast("error", "Error", error.message || "Failed to update profile")
+      }
+    })
+  }
+
+  // Handle password change form submission
+  if (passwordChangeForm) {
+    passwordChangeForm.addEventListener("submit", async (e) => {
+      e.preventDefault()
+
+      // Reset feedback
+      passwordFeedback.innerHTML = ""
+      passwordFeedback.classList.add("d-none")
+
+      const currentPasswordValue = currentPassword.value
+      const newPasswordValue = newPassword.value
+      const confirmNewPasswordValue = confirmNewPassword.value
+
+      // Client-side validation
+      if (!currentPasswordValue || !newPasswordValue || !confirmNewPasswordValue) {
+        showPasswordFeedback("error", "All password fields are required")
+        return
+      }
+
+      if (newPasswordValue.length < 6) {
+        showPasswordFeedback("error", "New password must be at least 6 characters long")
+        return
+      }
+
+      if (newPasswordValue !== confirmNewPasswordValue) {
+        showPasswordFeedback("error", "New passwords do not match")
+        return
+      }
+
+      // Clear any previous error messages before submitting
+      passwordFeedback.classList.add("d-none")
+
+      try {
+        const response = await fetch("/api/auth/change-password", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            currentPassword: currentPasswordValue,
+            newPassword: newPasswordValue,
+          }),
+        })
+
+        if (!response.ok) {
+          const data = await response.json()
+          throw new Error(data.error || "Failed to change password")
+        }
+
+        // Clear form
+        currentPassword.value = ""
+        newPassword.value = ""
+        confirmNewPassword.value = ""
+
+        showPasswordFeedback("success", "Password changed successfully")
+        showToast("success", "Success", "Password changed successfully")
+      } catch (error) {
+        console.error("Change password error:", error)
+        showPasswordFeedback("error", error.message || "Failed to change password")
+      }
+    })
+  }
+
+  // Add a function to clear the password feedback when typing in the password fields
+  // Add this after the password change form submission handler:
+  if (newPassword) {
+    newPassword.addEventListener("input", () => {
+      // Clear error message when user starts typing a new password
+      passwordFeedback.classList.add("d-none")
+    })
+  }
+
+  if (confirmNewPassword) {
+    confirmNewPassword.addEventListener("input", () => {
+      // Clear error message when user starts typing in confirm password field
+      passwordFeedback.classList.add("d-none")
+    })
+  }
+
+  if (currentPassword) {
+    currentPassword.addEventListener("input", () => {
+      // Clear error message when user starts typing current password
+      passwordFeedback.classList.add("d-none")
+    })
+  }
+
+  // Add password toggle functionality
+  document.querySelectorAll(".toggle-password").forEach((button) => {
+    button.addEventListener("click", function () {
+      const input = this.previousElementSibling
+      const icon = this.querySelector("i")
+
+      if (input.type === "password") {
+        input.type = "text"
+        icon.classList.remove("bi-eye")
+        icon.classList.add("bi-eye-slash")
+      } else {
+        input.type = "password"
+        icon.classList.remove("bi-eye-slash")
+        icon.classList.add("bi-eye")
+      }
+    })
+  })
+
+  // Show password feedback
+  function showPasswordFeedback(type, message) {
+    passwordFeedback.innerHTML = `
+      <div class="alert alert-${type === "error" ? "danger" : "success"} mb-0">
+        <i class="bi bi-${type === "error" ? "exclamation-triangle" : "check-circle"} me-2"></i>
+        ${message}
+      </div>
+    `
+    passwordFeedback.classList.remove("d-none")
   }
 
   // Show toast notification
@@ -839,4 +1016,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Load profile data when page loads
   loadProfileData()
+
+  // Bootstrap variable declaration
+  const bootstrap = window.bootstrap
 })
