@@ -177,8 +177,9 @@ a:hover {
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-dark);
-  border-color: var(--primary-dark);
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+  color: white; /* Ensure text stays white on hover */
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(67, 97, 238, 0.15);
 }
