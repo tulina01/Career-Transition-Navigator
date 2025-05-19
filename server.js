@@ -1180,31 +1180,20 @@ async function connectToMongoDB() {
       return true
     }
 
-    // Use environment variable for MongoDB URI (MongoDB Atlas connection string)
-    if (!process.env.MONGODB_URI) {
-      console.error(
-        "MONGODB_URI environment variable is not set. Please set it to your MongoDB Atlas connection string.",
-      )
-      console.log("Server will continue without MongoDB. Data will not be persisted.")
-      return false
-    }
+    // Use environment variable for MongoDB URI if available, otherwise use local
+    const mongoURI = process.env.MONGODB_URI || "mongodb://localhost:27017/career-navigator"
+    console.log(`Attempting to connect to MongoDB at: ${mongoURI.includes("@") ? mongoURI.split("@")[1] : "localhost"}`)
 
-    const mongoURI = process.env.MONGODB_URI
-    console.log("Attempting to connect to MongoDB Atlas...")
-
-    // Connect to MongoDB Atlas with recommended options
     await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-      socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
     })
 
-    console.log("Connected to MongoDB Atlas successfully")
+    console.log("Connected to MongoDB successfully")
     isMongoConnected = true
     return true
   } catch (err) {
-    console.error("MongoDB Atlas connection error:", err)
+    console.error("MongoDB connection error:", err)
     console.log("Server will continue without MongoDB. Data will not be persisted.")
     return false
   }
