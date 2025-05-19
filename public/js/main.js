@@ -772,28 +772,17 @@ document.addEventListener("DOMContentLoaded", () => {
         ${stepsHTML}
       </div>
       <div class="mt-4 d-flex flex-wrap justify-content-center gap-3">
-        <button class="btn btn-primary" onclick="window.print()">
-          <i class="bi bi-printer me-2"></i>Print Plan
-        </button>
-        ${
-          isLoggedIn
-            ? `<button class="btn btn-outline-primary" id="savePlanBtn">
-                <i class="bi bi-bookmark me-2"></i>Save Plan
-              </button>`
-            : `<a href="login.html" class="btn btn-outline-primary">
-                <i class="bi bi-person me-2"></i>Login to Save
-              </a>`
-        }
-        <button class="btn btn-outline-secondary" id="shareBtn">
-          <i class="bi bi-share me-2"></i>Share
-        </button>
-      </div>
+  ${
+    isLoggedIn
+      ? `<button class="btn btn-outline-primary" id="savePlanBtn">
+          <i class="bi bi-bookmark me-2"></i>Save Plan
+        </button>`
+      : `<a href="login.html" class="btn btn-outline-primary">
+          <i class="bi bi-person me-2"></i>Login to Save
+        </a>`
+  }
+</div>
     `
-
-    // Add event listeners for buttons
-    document.getElementById("shareBtn").addEventListener("click", () => {
-      showToast("info", "Info", "Share functionality would be implemented here.")
-    })
 
     // Add save plan functionality
     const savePlanBtn = document.getElementById("savePlanBtn")
